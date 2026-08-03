@@ -5,7 +5,7 @@
 [![CI](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml/badge.svg)](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
 [![GPU](https://img.shields.io/badge/runtime-AMD%20ROCm-red.svg)](https://rocm.docs.amd.com/)
-[![Dataset](https://img.shields.io/badge/data-contract--only-orange.svg)](data/README.md)
+[![3DGS dataset](https://img.shields.io/badge/3DGS%20PLY-Hugging%20Face-yellow.svg)](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)
 
 An end-to-end open-source project for **authorized images → A800 3DGS
 reconstruction → three-layer room shell → AMD ROCm rendering → BiGym/MuJoCo
@@ -13,10 +13,11 @@ LeRobot collection**.
 
 The repository contains the real reconstruction, export, alignment, ROCm
 adaptation, compositing, replay filtering, collection, validation, and Gaussian
-cleanup code used in the experiment. Upstream-restricted images, full PLYs,
-official demonstrations, and the 32-episode video dataset are connected through
-auditable manifests, SHA-256 contracts, and license-aware acquisition tools
-instead of being redistributed.
+cleanup code used in the experiment. The curated derived PLY shell is published
+as a separately gated Hugging Face dataset. Upstream images, official
+demonstrations, and the 32-episode video dataset remain outside this repository
+and are connected through auditable manifests, SHA-256 contracts, and
+license-aware acquisition tools.
 
 > Current status: the technical pipeline and curated three-camera visual review
 > are complete. The shell, robot, and workbench are visible. A known limitation
@@ -38,9 +39,30 @@ instead of being redistributed.
 | LeRobot v3 | `21,018` frames, `96/96` H.264 videos fully decoded |
 | 3DGS | `63,150` strict renders with no fallback |
 | Physics isolation | added body / geom / collision = `0 / 0 / 0` |
+| Published shell | 4 PLYs, gated Hugging Face release, remote SHA-256 verified |
 
 See the [A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
 and [formal32 validation summary](evidence/formal32-validation-summary.json).
+
+## Download the published 3DGS shell
+
+The combined one-million-Gaussian shell, three independently loadable layers,
+alignment, camera path, manifests, and preview images are available from the
+[gated Hugging Face release](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell).
+Request access on the dataset page and authenticate locally before downloading:
+
+```bash
+hf auth login
+hf download eustance/amd-bigym-3dgs-kitchen-shell \
+  --repo-type dataset \
+  --include 'ply/*' 'metadata/*' 'SHA256SUMS' \
+  --local-dir ./data/private/amd-bigym-3dgs-kitchen-shell
+cd ./data/private/amd-bigym-3dgs-kitchen-shell
+shasum -a 256 -c SHA256SUMS
+```
+
+The release is non-commercial and remains subject to its dataset card, the
+current DL3DV terms, and independent access approval for the upstream source.
 
 ## Architecture
 
@@ -169,19 +191,21 @@ full video decoding, strict render counts, and SHA256SUMS.
 
 ## Data boundary
 
-| Content | Public Git | Authorized local storage |
-| --- | :---: | :---: |
-| Source identity, revision, size, hash, license | ✅ | ✅ |
-| Synthetic Gaussian CI fixture | generator ✅ | ✅ |
-| DL3DV source ZIP/images | ❌ | `data/private/` |
-| Complete derived PLY/checkpoint | ❌ | user-controlled artifact store |
-| Official demonstrations/real UUIDs | ❌ | user-controlled demo store |
-| Full 32-episode LeRobot videos | ❌ | user-controlled dataset root |
-| Sanitized metrics, contact sheet, cleanup A/B | ✅ | ✅ |
+| Content | Public Git | Gated Hugging Face | Authorized local storage |
+| --- | :---: | :---: | :---: |
+| Source identity, revision, size, hash, license | ✅ | ✅ | ✅ |
+| Synthetic Gaussian CI fixture | generator ✅ | — | ✅ |
+| DL3DV source ZIP/images | ❌ | ❌ | `data/private/` |
+| Curated derived PLY shell | manifest only | ✅ | optional cache |
+| Training checkpoint | ❌ | ❌ | user-controlled artifact store |
+| Official demonstrations/real UUIDs | ❌ | ❌ | user-controlled demo store |
+| Full 32-episode LeRobot videos | ❌ | ❌ | user-controlled dataset root |
+| Sanitized metrics, contact sheet, cleanup A/B | ✅ | previews ✅ | ✅ |
 
-This separation is intentional: processing code and data contracts are public,
-while every user obtains restricted inputs under the upstream terms. See the
-[data plane](data/README.md) and [license boundary](docs/data-license.md).
+This separation is intentional: code stays lightweight in Git, the curated PLY
+release has its own gated license boundary, and every user obtains restricted
+upstream inputs independently. See the [data plane](data/README.md) and
+[license boundary](docs/data-license.md).
 
 ## Repository layout
 
@@ -239,4 +263,6 @@ view coverage.
 Original repository code is licensed under [Apache-2.0](LICENSE). Third-party
 code and data remain under their respective terms; see [NOTICE](NOTICE) and
 [CITATION.cff](CITATION.cff). This repository grants no redistribution rights
-for DL3DV data, derived PLYs, BiGym demonstrations, or collected videos.
+for DL3DV data, BiGym demonstrations, or collected videos. The separate derived
+PLY release is governed by its own dataset card, CC BY-NC 4.0 notice, and the
+current DL3DV terms.

@@ -42,6 +42,14 @@
   "distribution": {
     "ply_files_in_repo": false,
     "checkpoint_in_repo": false,
-    "manifest_and_reproduction_code_in_repo": true
+    "manifest_and_reproduction_code_in_repo": true,
+    "derived_ply_release": {
+      "repo_id": "eustance/amd-bigym-3dgs-kitchen-shell",
+      "url": "https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell",
+      "gated": "manual",
+      "license": "cc-by-nc-4.0",
+      "subject_to_current_dl3dv_terms": true,
+      "remote_sha256_verified": true
+    }
   }
 }

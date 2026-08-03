@@ -5,15 +5,15 @@
 [![CI](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml/badge.svg)](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
 [![GPU](https://img.shields.io/badge/runtime-AMD%20ROCm-red.svg)](https://rocm.docs.amd.com/)
-[![Dataset](https://img.shields.io/badge/data-contract--only-orange.svg)](data/README.md)
+[![3DGS 数据](https://img.shields.io/badge/3DGS%20PLY-Hugging%20Face-yellow.svg)](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)
 
 一套从**受许可图片 → A800 3DGS 重建 → 三层房间壳 → AMD ROCm 渲染 →
 BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工程。
 
 仓库包含真实跑过的重建、导出、坐标对齐、ROCm 适配、视觉合成、回放筛选、
-采集、验收和 Gaussian 清理代码；受上游条款约束的原图、完整 PLY、官方
-demonstrations 和 32 条视频数据不被重新分发，而是通过可审计 manifest、SHA-256
-契约和授权下载入口连接到代码。
+采集、验收和 Gaussian 清理代码；精选派生 PLY 房间壳已作为独立的 Hugging Face
+门控数据集公开。受上游条款约束的原图、官方 demonstrations 和 32 条视频数据
+仍不进入本仓库，而是通过可审计 manifest、SHA-256 契约和授权下载入口连接到代码。
 
 > 当前结论：技术链路与精选三相机画面复核均已完成。房间壳、机器人和工作台
 > 完整可见；已知限制是固定 H1 头部/腕部相机超出部分源拍摄轨迹，少数低视角
@@ -34,9 +34,30 @@ demonstrations 和 32 条视频数据不被重新分发，而是通过可审计 
 | LeRobot v3 | `21,018` frames、`96/96` H.264 视频逐帧解码 |
 | 3DGS | `63,150` 次严格渲染，无 fallback |
 | 物理隔离 | 新增 body / geom / collision = `0 / 0 / 0` |
+| 已发布房间壳 | 4 个 PLY，Hugging Face 门控发布，远端 SHA-256 已验证 |
 
 机器可读证据见 [A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
 和 [formal32 validation](evidence/formal32-validation-summary.json)。
+
+## 下载已发布的 3DGS 房间壳
+
+一百万 Gaussian 组合壳、三个可独立加载的墙/地/顶层、坐标对齐、相机路径、
+manifest 与预览图均已发布到
+[Hugging Face 门控数据集](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)。
+先在数据集页面申请访问，再使用本地登录态下载：
+
+```bash
+hf auth login
+hf download eustance/amd-bigym-3dgs-kitchen-shell \
+  --repo-type dataset \
+  --include 'ply/*' 'metadata/*' 'SHA256SUMS' \
+  --local-dir ./data/private/amd-bigym-3dgs-kitchen-shell
+cd ./data/private/amd-bigym-3dgs-kitchen-shell
+shasum -a 256 -c SHA256SUMS
+```
+
+该发布仅限非商业用途，并继续受数据集卡片、当前 DL3DV 条款及上游独立访问
+审批约束。
 
 ## 架构
 
@@ -160,19 +181,20 @@ make validate
 
 ## 数据边界
 
-| 内容 | Public Git | 本地授权目录 |
-| --- | :---: | :---: |
-| 数据来源、revision、大小、SHA、许可 | ✅ | ✅ |
-| 合成 Gaussian CI fixture | 生成器 ✅ | ✅ |
-| DL3DV 原图/ZIP | ❌ | `data/private/` |
-| 完整派生 PLY/checkpoint | ❌ | 用户自有 artifact store |
-| BiGym official demonstrations/UUID | ❌ | 用户自有 demo store |
-| 32 条 LeRobot 数据/视频 | ❌ | 用户自有 dataset root |
-| 脱敏统计、精选联系表和清理 A/B | ✅ | ✅ |
+| 内容 | Public Git | 门控 Hugging Face | 本地授权目录 |
+| --- | :---: | :---: | :---: |
+| 数据来源、revision、大小、SHA、许可 | ✅ | ✅ | ✅ |
+| 合成 Gaussian CI fixture | 生成器 ✅ | — | ✅ |
+| DL3DV 原图/ZIP | ❌ | ❌ | `data/private/` |
+| 精选派生 PLY 房间壳 | 仅 manifest | ✅ | 可选缓存 |
+| 训练 checkpoint | ❌ | ❌ | 用户自有 artifact store |
+| BiGym official demonstrations/UUID | ❌ | ❌ | 用户自有 demo store |
+| 32 条 LeRobot 数据/视频 | ❌ | ❌ | 用户自有 dataset root |
+| 脱敏统计、精选联系表和清理 A/B | ✅ | 预览图 ✅ | ✅ |
 
-这里的“不上传”不是缺文件，而是开源结构的一部分：代码与数据契约公开，受限
-数据由每个使用者独立取得并接受上游条款。详见 [data plane](data/README.md)
-和 [license boundary](docs/data-license.md)。
+该分层是开源结构的一部分：代码轻量保存在 Git，精选 PLY 通过独立门控数据集
+发布，受限上游数据仍由每个使用者独立取得并接受条款。详见
+[data plane](data/README.md) 和 [license boundary](docs/data-license.md)。
 
 ## 仓库结构
 
@@ -228,4 +250,5 @@ python scripts/clean_gaussian_ply.py \
 
 本仓库自有代码采用 [Apache-2.0](LICENSE)。第三方代码和数据继续受各自许可
 约束，详见 [NOTICE](NOTICE) 与 [CITATION.cff](CITATION.cff)。本仓库不授予
-DL3DV 数据、派生 PLY、BiGym demonstrations 或采集视频的再分发权利。
+DL3DV 数据、BiGym demonstrations 或采集视频的再分发权利。独立发布的派生 PLY
+遵循其数据集卡片、CC BY-NC 4.0 声明及当前 DL3DV 条款。
