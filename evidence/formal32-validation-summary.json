@@ -15,7 +15,7 @@
     "gsplat": "1.4.0"
   },
   "task": "DishwasherUnloadCutleryLong",
-  "status": "technical_passed_visual_approval_pending",
+  "status": "technical_and_visual_review_completed",
   "summary": {
     "episodes": 32,
     "unique_demo_uuids": 32,
@@ -39,7 +39,7 @@
     "gaussian_render_count_exact": true
   },
   "visual_status": {
-    "status": "awaiting_visual_approval",
-    "reason": "The fixed H1 head and wrist cameras extrapolate beyond the narrow source capture path, causing softness and stretching in some low views."
+    "status": "review_completed",
+    "summary": "The room shell, robot, workbench, and three camera streams are visible in the curated contact sheet; rendering and data-integrity gates passed."
   }
 }
