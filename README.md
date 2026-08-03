@@ -90,6 +90,13 @@ not GPU availability or photographic quality.
 Accept the current DL3DV terms independently, then use your local Hugging Face
 login. The downloader never accepts a token on the command line.
 
+Exact reproducible source:
+
+- access page: [DL3DV/DL3DV-ALL-960P](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P);
+- pinned scene object: [`3K/951f9d...zip`](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P/blob/abb4dab0d4b6d93c32e6d901c06c35bad03210fb/3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip);
+- revision: `abb4dab0d4b6d93c32e6d901c06c35bad03210fb`;
+- archive SHA-256: `4a6f3eac1ff4d2545b655fdfe5c6edd7e08f92e847584fabf933a09e592be563`.
+
 ```bash
 python -m pip install -r reconstruction/requirements-core.txt
 hf auth login

@@ -5,6 +5,8 @@
   "source": {
     "dataset": "DL3DV-10K / DL3DV-ALL-960P",
     "repo_id": "DL3DV/DL3DV-ALL-960P",
+    "access_url": "https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P",
+    "object_url": "https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P/blob/abb4dab0d4b6d93c32e6d901c06c35bad03210fb/3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip",
     "revision": "abb4dab0d4b6d93c32e6d901c06c35bad03210fb",
     "filename": "3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip",
     "scene_hash": "951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86",

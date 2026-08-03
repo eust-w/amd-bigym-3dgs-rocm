@@ -25,4 +25,10 @@ accepting the DL3DV terms. The downloader reads only the local Hugging Face
 credential store and verifies the pinned revision, byte count, SHA-256 and ZIP
 CRC before producing `source.json`.
 
+The exact upstream object is
+[`3K/951f9d...zip`](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P/blob/abb4dab0d4b6d93c32e6d901c06c35bad03210fb/3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip).
+Request access from the
+[official dataset page](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P)
+before running the downloader; this repository does not mirror the ZIP.
+
 The default private-data root is `data/private/`, which is ignored by Git.
