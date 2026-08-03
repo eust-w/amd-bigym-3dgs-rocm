@@ -26,6 +26,13 @@ parameterized entrypoint.
 Accept the current DL3DV terms and authenticate locally first. Never paste a
 token into an environment file or command line.
 
+Source access is requested from
+[DL3DV/DL3DV-ALL-960P](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P).
+The experiment pins
+[`3K/951f9d...zip`](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P/blob/abb4dab0d4b6d93c32e6d901c06c35bad03210fb/3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip)
+at revision `abb4dab0d4b6d93c32e6d901c06c35bad03210fb`; the downloader verifies
+its expected SHA-256 before extraction.
+
 ```bash
 python -m pip install -r reconstruction/requirements-core.txt
 hf auth login
