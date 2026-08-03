@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "run_id": "amdcompetition-a800-dl3dv-shell-h5w87",
+  "status": "technical_and_curated_visual_review_completed",
+  "hardware": "NVIDIA A800",
+  "method": {
+    "trainer": "gsplat simple_trainer",
+    "strategy": "mcmc",
+    "steps": 30000,
+    "sh_degree": 3,
+    "antialiased": true,
+    "gaussians_before_layering": 1000000,
+    "gsplat_revision": "4d3a3b69db4de0326f983ccf7b7b255271a17b01"
+  },
+  "held_out_metrics": {
+    "psnr": 35.16229248046875,
+    "ssim": 0.9589212536811829,
+    "lpips": 0.13073210418224335
+  },
+  "shell_assets": [
+    {
+      "path": "walls_fixed_kitchen.ply",
+      "bytes": 242564991,
+      "sha256": "6fa0d703e3146e1c79adee807772cb6389a3d44b3df0a90fc9006c4dec4e4f22"
+    },
+    {
+      "path": "floor_perimeter.ply",
+      "bytes": 2596714,
+      "sha256": "f5f654e9657fe19828f2e227696f16b1da16ecb159b7544e31d11a002110c824"
+    },
+    {
+      "path": "ceiling_lights.ply",
+      "bytes": 2843225,
+      "sha256": "298299a6ba443fa75c3778ed6a46e1df2170406c18235bf495023f70b256b0eb"
+    },
+    {
+      "path": "gaussians_shell.ply",
+      "bytes": 248001644,
+      "sha256": "2889d80044ebab5c8d7c89e2b49415b0ebf4232493e850085c15d1f3cf7fdc57"
+    }
+  ],
+  "distribution": {
+    "ply_files_in_repo": false,
+    "checkpoint_in_repo": false,
+    "manifest_and_reproduction_code_in_repo": true
+  }
+}

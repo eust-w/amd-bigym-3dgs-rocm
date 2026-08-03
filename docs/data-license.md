@@ -2,8 +2,11 @@
 
 ## 本仓库包含什么
 
-- Apache-2.0 的编排、验证和清理脚本；
+- Apache-2.0 的授权下载门禁、COLMAP 准备、A800 重建、三层壳导出、
+  编排、验证和清理脚本；
 - 对 BiGym / gsplat 的源码补丁；
+- `data/manifests/` 中不含原图和真实 UUID 的数据契约；
+- CI 运行时生成的 Apache-2.0 合成 Gaussian 房间；
 - 不含 demo UUID 的 replay plan schema；
 - 脱敏的机器统计与小尺寸人工验收联系表；联系表是经过 3DGS 重建、
   MuJoCo 合成、缩放和标注的研究结果，单独按 CC BY-NC 4.0 与 DL3DV
@@ -17,6 +20,9 @@
 - BiGym official demonstrations 或其真实 UUID 列表；
 - LeRobot 32 条完整训练包；
 - SSH 地址、端口、密钥、云实例或私有对象存储地址。
+
+因此 public repo 能完整复现处理逻辑，但需要使用者自行取得合法输入；
+`make smoke-reconstruction` 只使用合成数据验证代码结构。
 
 ## DL3DV
 

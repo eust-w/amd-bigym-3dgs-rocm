@@ -1,183 +1,224 @@
 [🇺🇸 English](README.md) | [🇨🇳 中文](README.zh-CN.md)
 
-# AMD Radeon 上复现 BiGym + MuJoCo + 3DGS 房间壳
+# End-to-End 3DGS Room Shell for BiGym on AMD ROCm
 
 [![CI](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml/badge.svg)](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
-[![GPU](https://img.shields.io/badge/GPU-AMD%20Radeon%20gfx1100-red.svg)](https://rocm.docs.amd.com/)
+[![GPU](https://img.shields.io/badge/runtime-AMD%20ROCm-red.svg)](https://rocm.docs.amd.com/)
+[![Dataset](https://img.shields.io/badge/data-contract--only-orange.svg)](data/README.md)
 
-这是一套经过真实 AMD Radeon `gfx1100` 运行验证的复现仓库：把视觉型 3D Gaussian Splatting 房间壳叠加到 BiGym/MuJoCo 任务画面，在不改变物理碰撞的前提下，完成 `DishwasherUnloadCutleryLong` 32 条独立成功轨迹采集、LeRobot v3 打包、全量视频解码验收和明显异常 Gaussian 的非破坏式清理。房间壳、机器人和工作台在三路任务相机中完整可见。
+一套从**受许可图片 → A800 3DGS 重建 → 三层房间壳 → AMD ROCm 渲染 →
+BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工程。
+
+仓库包含真实跑过的重建、导出、坐标对齐、ROCm 适配、视觉合成、回放筛选、
+采集、验收和 Gaussian 清理代码；受上游条款约束的原图、完整 PLY、官方
+demonstrations 和 32 条视频数据不被重新分发，而是通过可审计 manifest、SHA-256
+契约和授权下载入口连接到代码。
+
+> 当前结论：技术链路与精选三相机画面复核均已完成。房间壳、机器人和工作台
+> 完整可见；已知限制是固定 H1 头部/腕部相机超出部分源拍摄轨迹，少数低视角
+> 仍可能柔化或拉伸。
 
 ![32 条数据中 4 个 episode × 3 路相机精选画面](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
-## 已验证结果
+## 实测结果
 
-| 检查项 | AMD 实测结果 |
-| --- | ---: |
-| GPU / 架构 | AMD Radeon / `gfx1100` |
-| PyTorch / HIP | `2.9.1+gitff65f5b` / `7.2.53211-e1a6bc5663` |
-| gsplat native 扩展 | `GATE_OK=True` |
-| 任务 | `DishwasherUnloadCutleryLong` |
-| 成功 episode | `32/32` |
-| 唯一 demo UUID | `32/32` |
-| `reward=1.0` | `32/32` |
-| 总帧数 | `21,018` |
-| H.264 视频 | `96/96` 全部逐帧解码 |
-| 严格 3DGS 渲染 | `63,150` 次，无 fallback |
-| 3DGS 新增物理对象 | body/geom/collision = `0/0/0` |
+| 阶段 | 已验证结果 |
+| --- | --- |
+| 源数据 | DL3DV-ALL-960P，355 张 `960×540` 图片，固定 revision 与 archive SHA |
+| A800 重建 | gsplat MCMC，30k steps，1,000,000 Gaussians |
+| held-out | PSNR `35.1623` / SSIM `0.9589` / LPIPS `0.1307` |
+| AMD 运行 | Radeon `gfx1100`，ROCm/HIP，gsplat native gate 通过 |
+| BiGym 任务 | `DishwasherUnloadCutleryLong` |
+| 正式数据 | `32/32` episode、`32/32` 唯一 UUID、全部 `reward=1.0` |
+| LeRobot v3 | `21,018` frames、`96/96` H.264 视频逐帧解码 |
+| 3DGS | `63,150` 次严格渲染，无 fallback |
+| 物理隔离 | 新增 body / geom / collision = `0 / 0 / 0` |
 
-机器可读摘要见 [formal32-validation-summary.json](evidence/formal32-validation-summary.json)。
+机器可读证据见 [A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
+和 [formal32 validation](evidence/formal32-validation-summary.json)。
 
-## 方案结构
+## 架构
 
 ```mermaid
 flowchart LR
-  A[合法取得的 3DGS PLY] --> B[Sim3 坐标对齐]
-  B --> C[ROCm gsplat native gate]
-  C --> D[BiGym + MuJoCo 前景合成]
-  E[官方 demonstrations] --> F[20 Hz reward 预检]
-  F --> G[32 个唯一 UUID replay plan]
-  D --> H[1 条严格冒烟]
-  G --> H
-  H --> I[32 条正式采集]
-  I --> J[LeRobot v3 + 96 视频验收]
-  J --> K[精选画面人工复核]
-  K --> L[非破坏式 Gaussian 清理 A/B]
+  A[授权 DL3DV ZIP] --> B[安全解压与已知位姿 COLMAP]
+  B --> C[default + MCMC 30k]
+  C --> D{PSNR / SSIM / LPIPS gate}
+  D --> E[Graphdeco SH3 PLY]
+  E --> F[Sim3 + 墙/地/顶三层壳]
+  F --> G[AMD ROCm gsplat]
+  G --> H[MuJoCo segmentation 合成]
+  I[官方 BiGym demonstrations] --> J[20 Hz reward 预检]
+  J --> K[32 个唯一 replay UUID]
+  H --> L[LeRobot v3 采集]
+  K --> L
+  L --> M[Parquet + 96 视频 + 视觉验收]
 ```
 
-3DGS 只负责背景颜色；机器人、工作台、洗碗机、抽屉和道具仍由 MuJoCo 渲染并参与物理。合成器使用 MuJoCo segmentation 覆盖动态前景，所以房间壳不会增加碰撞体。
+3DGS 仅提供视觉背景。机器人、工作台、洗碗机、抽屉和道具继续由 MuJoCo
+渲染并参与碰撞、接触和 reward；Gaussian 不进入 MJCF 物理世界。
 
-## 快速复现
+完整分层说明见 [end-to-end architecture](docs/architecture/end-to-end.md)。
 
-### 1. 准备 AMD 环境
+## 60 秒 CPU 验证
 
-推荐从 AMD 官方 ROCm/PyTorch 镜像或对应 Radeon wheel 开始。实测环境为 Python 3.12、ROCm 7.2.1、PyTorch 2.9.1。安装方式以 [AMD Radeon PyTorch 官方文档](https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/native_linux/install-pytorch.html) 为准。
+无需 GPU 或受限数据即可验证开源包的核心数据契约：
 
 ```bash
 git clone git@github.com:eust-w/amd-bigym-3dgs-rocm.git
 cd amd-bigym-3dgs-rocm
+python -m pip install 'numpy>=1.26,<3'
+make smoke-reconstruction
+make verify
+```
+
+CI 会生成一个 Apache-2.0 合成 Gaussian 房间，真实执行 binary PLY 解析、
+Sim(3)、墙/地/顶拆分、SHA 记录、中央工作区清空和零物理对象检查。该 smoke
+只证明代码结构，不替代 GPU 与视觉验收。
+
+## 完整复现
+
+### 1. 取得并验证源数据
+
+先自行接受 DL3DV 最新条款，再使用本地 Hugging Face 登录态：
+
+```bash
+python -m pip install -r reconstruction/requirements-core.txt
+hf auth login
+make download-reference-data
+```
+
+脚本不接受命令行 token，会核验 revision、字节数、SHA-256、ZIP CRC、图片数和
+相机位姿。数据默认进入 Git 忽略的 `data/private/`。
+
+### 2. 在 A800 重建三层壳
+
+```bash
+git clone https://github.com/nerfstudio-project/gsplat.git /workspace/gsplat
+git -C /workspace/gsplat checkout 4d3a3b69db4de0326f983ccf7b7b255271a17b01
+
 cp .env.example .env
-# 编辑 .env 中的本机路径，然后：
-set -a
-source .env
-set +a
-make preflight
-```
-
-### 2. 安装 BiGym 视觉壳补丁
-
-仓库以 BiGym 官方公开提交 `14beb30318ad14c5d6723175c2ee2281129792af` 为可复现基线。安装脚本拒绝覆盖 dirty checkout，并先执行 patch dry-run。
-
-```bash
+set -a; source .env; set +a
 make install-bigym
+
+export SOURCE_ARCHIVE="$PWD/data/private/dl3dv-kitchen/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip"
+export SOURCE_REPORT="$PWD/data/private/dl3dv-kitchen/source.json"
+export GSPLAT_DIR=/workspace/gsplat
+export BIGYM_DIR=/workspace/amd-bigym-3dgs/src/bigym
+export WORK_ROOT=/workspace/runs/dl3dv-kitchen-a800
+make reconstruct
 ```
 
-补丁包含视觉壳渲染、坐标对齐、物理隔离、三/四相机配置、fail-closed 收据、轨迹搜索、replay 计划和对应测试。上游项目见 [NeuracoreAI/BiGym](https://github.com/NeuracoreAI/bigym)。
+入口会完成：
 
-### 3. 编译 ROCm 版 gsplat
+1. 安全解压并把官方位姿转换为 COLMAP；
+2. known-pose SIFT 匹配与稀疏初始化；
+3. `default` 和 `mcmc` 两个 30k 候选；
+4. PSNR ≥ 30、SSIM ≥ 0.92、LPIPS ≤ 0.15 的 fail-closed 选择；
+5. Graphdeco SH3 PLY、camera path、MuJoCo OBB、Sim(3) 和三层壳导出；
+6. 可选的 BiGym 300-frame 三相机验收。
+
+详见 [reconstruction guide](reconstruction/README.md)。
+
+### 3. 在 AMD Radeon 上运行
+
+从 AMD 官方兼容的 ROCm/PyTorch 环境开始：
 
 ```bash
+make preflight
 make build-gsplat
-```
 
-脚本会安装固定的 `gsplat==1.4.0`、应用 [ROCm/gfx1100 补丁](patches/gsplat-1.4.0-rocm-gfx1100.patch)、创建隔离 clang wrapper，并实际渲染一个 64×64 Gaussian 场景。只有输出 `GATE_OK True` 才能继续。
-
-### 4. 放置 3DGS 房间壳
-
-本仓库不包含 DL3DV 原图、视频或派生 PLY。请先阅读 [数据与许可边界](docs/data-license.md)，合法取得或自行重建以下三层：
-
-```text
-walls_fixed_kitchen.ply
-floor_perimeter.ply
-ceiling_lights.ply
-```
-
-设置 `SHELL_WALLS`、`SHELL_FLOOR`、`SHELL_CEILING` 后执行：
-
-```bash
+export SHELL_WALLS=/path/to/walls_fixed_kitchen.ply
+export SHELL_FLOOR=/path/to/floor_perimeter.ply
+export SHELL_CEILING=/path/to/ceiling_lights.ply
 make stage-shell
 ```
 
-该步骤会把 PLY 与本次实测的 [profile](configs/dl3dv-kitchen-cutlery32-profile.json) / [alignment](configs/alignment-appearance-optimized.json) 组织到同一目录并打印 SHA-256，不会修改源 PLY。
+`build-gsplat` 固定 `gsplat==1.4.0`，应用实测的 ROCm/gfx1100 补丁，并真正
+渲染一个 64×64 Gaussian 场景；只有 `GATE_OK True` 才允许继续。
 
-### 5. 生成并核验 32 条 replay plan
+### 4. 采集 Cutlery 32 条
 
-[replay-plan.example.json](configs/replay-plan.example.json) 只是 schema，不能直接采集。必须在本地已授权的 BiGym official demonstrations 上生成 32 个唯一 UUID，并先做无相机物理回放：
-
-```bash
-"$VENV/bin/python" "$BIGYM_DIR/d/replay_generation/replay_plan.py" \
-  --compatibility-report /path/to/compatibility-report.json \
-  --request DishwasherUnloadCutleryLong=32 \
-  --output "$REPLAY_PLAN"
-
-cd "$BIGYM_DIR/d/replay_generation"
-"$VENV/bin/python" verify_replay_plan.py \
-  --replay-plan "$REPLAY_PLAN" \
-  --output /path/to/replay-plan-verification.json
-```
-
-`reward=0`、缺失 UUID、版本漂移后失败的轨迹都必须排除。delta 源轨迹会转换为统一的 absolute 训练标签，并验证关节状态等价性。
-
-### 6. 先 1 条冒烟，再采 32 条
-
-把 replay plan 临时裁成 1 条并通过 `reward=1`、三路视频和严格 3DGS 检查后，再执行正式采集：
+先在本地授权的 official demonstrations 上生成 32 个唯一 UUID 并进行无相机
+物理回放。`reward=0`、缺失 UUID 或版本漂移后的失败轨迹不得进入正式计划。
 
 ```bash
 make collect
-```
-
-采集器按 episode 关闭 Parquet/video writer，进度只在可独立读取的 episode 落盘后推进；中断后不会把未闭合 Parquet 误当成可续跑数据。
-
-### 7. 全量验收与清理
-
-```bash
-"$VENV/bin/python" -m pip install -r requirements-validation.txt
 make validate
 ```
 
-验证器检查 32 个 Parquet、32 行 episode metadata、32 个唯一 UUID、32 个成功奖励、21,018 行有限数值、96 个视频的编码/分辨率/fps/帧数/逐帧解码，以及严格渲染次数。
+采集器采用 episode 级事务写入；验收器检查 Parquet、episode metadata、奖励、
+状态/动作有限值、视频编码/帧数/逐帧解码、严格渲染次数和 SHA256SUMS。
 
-明显异常点采用“生成副本、不覆盖原始 PLY”的方式清理：
+## 数据边界
+
+| 内容 | Public Git | 本地授权目录 |
+| --- | :---: | :---: |
+| 数据来源、revision、大小、SHA、许可 | ✅ | ✅ |
+| 合成 Gaussian CI fixture | 生成器 ✅ | ✅ |
+| DL3DV 原图/ZIP | ❌ | `data/private/` |
+| 完整派生 PLY/checkpoint | ❌ | 用户自有 artifact store |
+| BiGym official demonstrations/UUID | ❌ | 用户自有 demo store |
+| 32 条 LeRobot 数据/视频 | ❌ | 用户自有 dataset root |
+| 脱敏统计、精选联系表和清理 A/B | ✅ | ✅ |
+
+这里的“不上传”不是缺文件，而是开源结构的一部分：代码与数据契约公开，受限
+数据由每个使用者独立取得并接受上游条款。详见 [data plane](data/README.md)
+和 [license boundary](docs/data-license.md)。
+
+## 仓库结构
+
+```text
+.
+├── reconstruction/        # 下载、COLMAP、训练选择、PLY/三层壳导出、A800 实验入口
+│   ├── bin/               # 可移植的下载与重建命令
+│   ├── src/               # 已实测 Python 实现
+│   ├── config/            # 版本与质量阈值
+│   └── reference/         # 原始 A800 provenance runner
+├── data/
+│   ├── manifests/         # 源数据、A800 重建、Cutlery32 数据契约
+│   └── samples/           # 合成 smoke 说明，不含受限 PLY
+├── patches/               # BiGym 视觉壳与 gsplat ROCm 精确补丁
+├── scripts/               # AMD 环境、采集、验证、清理和发布检查
+├── configs/               # 实测 Sim(3)、视觉 profile、replay schema
+├── evidence/              # 脱敏机器证据
+├── docs/                  # 架构、ROCm、采集、许可和排障
+└── .github/workflows/     # 数据泄漏、语法、patch 和合成重建 CI
+```
+
+## Gaussian 清理
+
+清理始终生成副本，不覆盖权威 PLY：
 
 ```bash
-"$VENV/bin/python" scripts/clean_gaussian_ply.py \
+python scripts/clean_gaussian_ply.py \
   --input "$SHELL_DIR/walls_fixed_kitchen.ply" \
   --output "$SHELL_DIR-cleaned/walls_fixed_kitchen.ply" \
   --manifest "$SHELL_DIR-cleaned/walls.cleaning.json" \
-  --bbox-min=-10,-10,-10 \
-  --bbox-max=10,10,10 \
-  --max-radius 10 \
-  --max-world-scale 0.75 \
-  --min-alpha 0.001 \
-  --selection-note "conservative room envelope; original preserved"
+  --bbox-min=-10,-10,-10 --bbox-max=10,10,10 \
+  --max-radius 10 --max-world-scale 0.75 --min-alpha 0.001
 ```
 
 ![清理前同帧三相机](docs/images/cleanup-before.png)
-
 ![清理后同帧三相机](docs/images/cleanup-after.png)
 
-实测从 1,000,000 个 Gaussian 中保留 772,721 个；清理版 1 条冒烟仍为 `reward=1.0`，三路原始/清理视频 SSIM 分别为 0.968、0.986、0.982，并减少了明显的低 alpha 漂浮雾块。
+实验中从 1,000,000 个 Gaussian 中保留 772,721 个。清理减少低 alpha 漂浮
+雾块，但无法修复源视角未覆盖造成的纹理拉伸。
 
-## 仓库目录
+## 文档
 
-| 路径 | 内容 |
-| --- | --- |
-| `patches/` | 实测 BiGym 集成补丁、gsplat ROCm/gfx1100 精确补丁 |
-| `scripts/` | 环境预检、安装、编译、冒烟、replay、采集、验收、清理 |
-| `configs/` | 实测坐标对齐与视觉壳 profile、replay plan schema |
-| `evidence/` | 脱敏后的正式 32 条与清理 A/B 机器摘要 |
-| `docs/` | 原理、ROCm 适配、采集验收、数据许可和排障 |
-| `.github/workflows/` | 公共仓库语法、patch、JSON、secret 和大文件检查 |
-
-## 进一步阅读
-
-- [端到端实现与坐标系](docs/01-end-to-end.md)
-- [ROCm / gsplat 适配说明](docs/02-rocm-gsplat.md)
-- [32 条采集与失败回放治理](docs/03-collection.md)
+- [重建流水线](reconstruction/README.md)
+- [端到端架构](docs/architecture/end-to-end.md)
+- [坐标系与物理隔离](docs/01-end-to-end.md)
+- [ROCm / gsplat 适配](docs/02-rocm-gsplat.md)
+- [32 条采集与回放失败治理](docs/03-collection.md)
 - [完整性验收与异常点清理](docs/04-validation-and-cleaning.md)
 - [数据与许可边界](docs/data-license.md)
 - [常见故障](docs/troubleshooting.md)
 
-## 许可
+## License and citation
 
-本仓库代码采用 [Apache-2.0](LICENSE)。第三方代码和数据继续受各自许可约束；`docs/images/` 的研究结果联系表单独按 [图像来源与 CC BY-NC 说明](docs/images/README.md) 管理。DL3DV-10K 需要单独申请访问并接受其 Terms of Use；本仓库不授予任何数据使用或再分发权利。
+本仓库自有代码采用 [Apache-2.0](LICENSE)。第三方代码和数据继续受各自许可
+约束，详见 [NOTICE](NOTICE) 与 [CITATION.cff](CITATION.cff)。本仓库不授予
+DL3DV 数据、派生 PLY、BiGym demonstrations 或采集视频的再分发权利。

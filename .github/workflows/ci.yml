@@ -17,11 +17,17 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install CPU smoke dependencies
+        run: python -m pip install 'numpy>=1.26,<3'
+
       - name: Verify public repository contents
         run: ./scripts/verify_public_repo.sh
 
       - name: Verify local Markdown links
         run: python scripts/check_markdown_links.py
+
+      - name: Exercise the reconstruction and shell-export contract
+        run: make smoke-reconstruction PYTHON=python
 
       - name: Verify BiGym overlay applies to the pinned public base
         run: |
