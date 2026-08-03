@@ -1,0 +1,42 @@
+name: public-reproduction-checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-patch-checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify public repository contents
+        run: ./scripts/verify_public_repo.sh
+
+      - name: Verify local Markdown links
+        run: python scripts/check_markdown_links.py
+
+      - name: Verify BiGym overlay applies to the pinned public base
+        run: |
+          git clone --filter=blob:none https://github.com/NeuracoreAI/bigym.git /tmp/bigym
+          git -C /tmp/bigym checkout --detach 14beb30318ad14c5d6723175c2ee2281129792af
+          git -C /tmp/bigym apply --check "$GITHUB_WORKSPACE/patches/bigym-3dgs-shell-and-collector.patch"
+
+      - name: Verify gsplat patch applies to 1.4.0
+        run: |
+          python -m pip download --no-deps --dest /tmp/gsplat-wheel gsplat==1.4.0
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+          wheel = next(Path('/tmp/gsplat-wheel').glob('*.whl'))
+          with zipfile.ZipFile(wheel) as archive:
+              archive.extractall('/tmp/gsplat-site')
+          PY
+          patch --dry-run --forward -d /tmp/gsplat-site -p1 < patches/gsplat-1.4.0-rocm-gfx1100.patch

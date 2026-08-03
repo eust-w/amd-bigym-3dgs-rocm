@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "status": "cleaned_copy_created",
+  "method": "manual_bbox_plus_obvious_outlier_filters",
+  "selection": {
+    "bbox_min": [-10.0, -10.0, -10.0],
+    "bbox_max": [10.0, 10.0, 10.0],
+    "max_radius": 10.0,
+    "max_world_scale": 0.75,
+    "min_alpha": 0.001
+  },
+  "gaussians": {
+    "input": 1000000,
+    "kept": 772721,
+    "removed": 227279
+  },
+  "removed": {
+    "outside_manual_bbox": 4490,
+    "outside_max_radius_inside_bbox": 934,
+    "oversized_inside_bbox": 519,
+    "below_min_alpha_inside_bbox": 221336,
+    "nonfinite": 0
+  },
+  "ab_smoke": {
+    "frames": 683,
+    "reward": 1.0,
+    "strict_3dgs_renders": 2052,
+    "ssim_original_vs_cleaned": {
+      "head": 0.967964,
+      "left_wrist": 0.985970,
+      "right_wrist": 0.982242
+    }
+  }
+}
