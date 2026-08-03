@@ -20,7 +20,7 @@ AMD ROCm 渲染 → BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工
 > HIP 30k 重建、保守人工清理、任务感知房间壳导出和源相机原生渲染均已通过；
 > 原生 BiGym 与独立 1 条 683 帧 CutleryLong 采集也通过。**BiGym 内实时 3DGS
 > 合成仍阻塞**：严格 gsplat 探针以 `139` 退出，因此不能宣称 gfx1100 房间壳
-> 采集已经完成。详见[实测执行报告](docs/06-gfx1100-execution-report.md)。
+> 采集已经完成。详见[实测执行报告](docs/06-gfx1100-execution-report.zh-CN.md)。
 
 ![32 条数据中 4 个 episode × 3 路相机精选画面](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
@@ -283,7 +283,7 @@ python scripts/clean_gaussian_ply.py \
 - [坐标系与物理隔离](docs/01-end-to-end.md)
 - [ROCm / gsplat 适配](docs/02-rocm-gsplat.md)
 - [AMD gfx1100 原生重建](docs/05-amd-native-reconstruction.md)
-- [AMD gfx1100 实测执行报告](docs/06-gfx1100-execution-report.md)
+- [AMD gfx1100 实测执行报告](docs/06-gfx1100-execution-report.zh-CN.md)
 - [32 条采集与回放失败治理](docs/03-collection.md)
 - [完整性验收与异常点清理](docs/04-validation-and-cleaning.md)
 - [数据与许可边界](docs/data-license.md)

@@ -1,3 +1,5 @@
+[🇺🇸 English](06-gfx1100-execution-report.md) | [🇨🇳 中文](06-gfx1100-execution-report.zh-CN.md)
+
 # AMD gfx1100 execution report — 2026-08-04
 
 This report records the measured state of the Radeon-native reconstruction,
