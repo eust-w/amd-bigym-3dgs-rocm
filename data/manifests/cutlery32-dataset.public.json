@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "dataset_id": "amd-rocm-cutlery32-a800parity-v1-20260803",
+  "task": "DishwasherUnloadCutleryLong",
+  "format": "LeRobot v3",
+  "status": "technical_and_visual_review_completed",
+  "summary": {
+    "episodes": 32,
+    "unique_demo_uuids": 32,
+    "saved_reward_1": 32,
+    "frames": 21018,
+    "video_files": 96,
+    "decoded_video_files": 96,
+    "camera_streams": ["head", "left_wrist", "right_wrist"],
+    "strict_3dgs_renders": 63150
+  },
+  "redistribution": {
+    "full_dataset_in_repo": false,
+    "real_demo_uuids_in_repo": false,
+    "sanitized_validation_summary_in_repo": true,
+    "reason": "Official demonstrations and DL3DV-derived frames retain their upstream terms."
+  },
+  "evidence": "../../evidence/formal32-validation-summary.json"
+}

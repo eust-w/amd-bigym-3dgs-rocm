@@ -1,183 +1,235 @@
 [🇺🇸 English](README.md) | [🇨🇳 中文](README.zh-CN.md)
 
-# Reproducing a BiGym + MuJoCo + 3DGS Room Shell on AMD Radeon
+# End-to-End 3DGS Room Shell for BiGym on AMD ROCm
 
 [![CI](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml/badge.svg)](https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
-[![GPU](https://img.shields.io/badge/GPU-AMD%20Radeon%20gfx1100-red.svg)](https://rocm.docs.amd.com/)
+[![GPU](https://img.shields.io/badge/runtime-AMD%20ROCm-red.svg)](https://rocm.docs.amd.com/)
+[![Dataset](https://img.shields.io/badge/data-contract--only-orange.svg)](data/README.md)
 
-This repository provides a reproduction pipeline validated on a real AMD Radeon `gfx1100` GPU. It composites a visual 3D Gaussian Splatting room shell into BiGym/MuJoCo task views without changing physical collisions. The validated workflow includes 32 independent successful `DishwasherUnloadCutleryLong` trajectories, LeRobot v3 packaging, full video decoding checks, and non-destructive cleanup of visibly incorrect Gaussians. The room shell, robot, and workbench are fully visible across all three task cameras.
+An end-to-end open-source project for **authorized images → A800 3DGS
+reconstruction → three-layer room shell → AMD ROCm rendering → BiGym/MuJoCo
+LeRobot collection**.
 
-![Four selected episodes across three cameras from the 32-episode dataset](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
+The repository contains the real reconstruction, export, alignment, ROCm
+adaptation, compositing, replay filtering, collection, validation, and Gaussian
+cleanup code used in the experiment. Upstream-restricted images, full PLYs,
+official demonstrations, and the 32-episode video dataset are connected through
+auditable manifests, SHA-256 contracts, and license-aware acquisition tools
+instead of being redistributed.
 
-## Validated Results
+> Current status: the technical pipeline and curated three-camera visual review
+> are complete. The shell, robot, and workbench are visible. A known limitation
+> remains: fixed H1 head and wrist cameras extend beyond parts of the source
+> capture trajectory, so a few low views can still appear soft or stretched.
 
-| Check | Measured AMD result |
-| --- | ---: |
-| GPU / architecture | AMD Radeon / `gfx1100` |
-| PyTorch / HIP | `2.9.1+gitff65f5b` / `7.2.53211-e1a6bc5663` |
-| Native gsplat extension | `GATE_OK=True` |
-| Task | `DishwasherUnloadCutleryLong` |
-| Successful episodes | `32/32` |
-| Unique demo UUIDs | `32/32` |
-| `reward=1.0` | `32/32` |
-| Total frames | `21,018` |
-| H.264 videos | `96/96` fully decoded frame by frame |
-| Strict 3DGS renders | `63,150` with no fallback |
-| Physics objects added by 3DGS | body/geom/collision = `0/0/0` |
+![Four selected episodes across three cameras](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
-See [formal32-validation-summary.json](evidence/formal32-validation-summary.json) for the machine-readable summary.
+## Measured results
 
-## Pipeline
+| Stage | Verified result |
+| --- | --- |
+| Source | DL3DV-ALL-960P, 355 `960×540` images, pinned revision and archive hash |
+| A800 reconstruction | gsplat MCMC, 30k steps, 1,000,000 Gaussians |
+| Held-out metrics | PSNR `35.1623` / SSIM `0.9589` / LPIPS `0.1307` |
+| AMD runtime | Radeon `gfx1100`, ROCm/HIP, native gsplat gate passed |
+| BiGym task | `DishwasherUnloadCutleryLong` |
+| Formal data | `32/32` episodes, `32/32` unique UUIDs, all `reward=1.0` |
+| LeRobot v3 | `21,018` frames, `96/96` H.264 videos fully decoded |
+| 3DGS | `63,150` strict renders with no fallback |
+| Physics isolation | added body / geom / collision = `0 / 0 / 0` |
+
+See the [A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
+and [formal32 validation summary](evidence/formal32-validation-summary.json).
+
+## Architecture
 
 ```mermaid
 flowchart LR
-  A[Authorized 3DGS PLY] --> B[Sim3 alignment]
-  B --> C[Native ROCm gsplat gate]
-  C --> D[BiGym + MuJoCo foreground compositing]
-  E[Official demonstrations] --> F[20 Hz reward preflight]
-  F --> G[Replay plan with 32 unique UUIDs]
-  D --> H[One strict smoke episode]
-  G --> H
-  H --> I[Collect 32 formal episodes]
-  I --> J[Validate LeRobot v3 + 96 videos]
-  J --> K[Manual review of selected frames]
-  K --> L[Non-destructive Gaussian cleanup A/B]
+  A[Authorized DL3DV ZIP] --> B[Safe extraction + known-pose COLMAP]
+  B --> C[default + MCMC 30k]
+  C --> D{PSNR / SSIM / LPIPS gate}
+  D --> E[Graphdeco SH3 PLY]
+  E --> F[Sim3 + wall/floor/ceiling shell]
+  F --> G[AMD ROCm gsplat]
+  G --> H[MuJoCo segmentation composite]
+  I[Official BiGym demonstrations] --> J[20 Hz reward preflight]
+  J --> K[32 unique replay UUIDs]
+  H --> L[LeRobot v3 collection]
+  K --> L
+  L --> M[Parquet + 96 videos + visual review]
 ```
 
-3DGS supplies background color only. The robot, workbench, dishwasher, drawers, and task objects remain MuJoCo-rendered physical entities. The compositor uses MuJoCo segmentation to preserve dynamic foregrounds, so the room shell introduces no collision geometry.
+3DGS supplies the visual background only. The robot, workbench, dishwasher,
+drawers, and task props remain MuJoCo-rendered physical entities. Gaussians do
+not enter the MJCF physics world.
 
-## Quick Reproduction
+See the complete [end-to-end architecture](docs/architecture/end-to-end.md).
 
-### 1. Prepare the AMD environment
+## 60-second CPU verification
 
-Start with an official AMD ROCm/PyTorch image or the corresponding Radeon wheels. The validated environment used Python 3.12, ROCm 7.2.1, and PyTorch 2.9.1. Follow the [official AMD Radeon PyTorch installation guide](https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/native_linux/install-pytorch.html).
+Validate the public package without a GPU or gated data:
 
 ```bash
 git clone git@github.com:eust-w/amd-bigym-3dgs-rocm.git
 cd amd-bigym-3dgs-rocm
+python -m pip install 'numpy>=1.26,<3'
+make smoke-reconstruction
+make verify
+```
+
+CI generates an Apache-2.0 synthetic Gaussian room and executes binary PLY
+parsing, Sim(3), wall/floor/ceiling splitting, hash recording, central-workspace
+exclusion, and zero-physics-object validation. This proves the code contract,
+not GPU availability or photographic quality.
+
+## Full reproduction
+
+### 1. Acquire and verify the source
+
+Accept the current DL3DV terms independently, then use your local Hugging Face
+login. The downloader never accepts a token on the command line.
+
+```bash
+python -m pip install -r reconstruction/requirements-core.txt
+hf auth login
+make download-reference-data
+```
+
+The gate checks revision, byte count, SHA-256, ZIP CRC, image count, and camera
+poses. Private data is written under the Git-ignored `data/private/` tree.
+
+### 2. Reconstruct the room shell on A800
+
+```bash
+git clone https://github.com/nerfstudio-project/gsplat.git /workspace/gsplat
+git -C /workspace/gsplat checkout 4d3a3b69db4de0326f983ccf7b7b255271a17b01
+
 cp .env.example .env
-# Edit the local paths in .env, then run:
-set -a
-source .env
-set +a
-make preflight
-```
-
-### 2. Install the BiGym visual-shell patch
-
-The reproducible baseline is the official BiGym commit `14beb30318ad14c5d6723175c2ee2281129792af`. The installer refuses to overwrite a dirty checkout and performs a patch dry-run before applying any changes.
-
-```bash
+set -a; source .env; set +a
 make install-bigym
+
+export SOURCE_ARCHIVE="$PWD/data/private/dl3dv-kitchen/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip"
+export SOURCE_REPORT="$PWD/data/private/dl3dv-kitchen/source.json"
+export GSPLAT_DIR=/workspace/gsplat
+export BIGYM_DIR=/workspace/amd-bigym-3dgs/src/bigym
+export WORK_ROOT=/workspace/runs/dl3dv-kitchen-a800
+make reconstruct
 ```
 
-The patch includes visual-shell rendering, coordinate alignment, physics isolation, three- and four-camera configurations, fail-closed receipts, trajectory search, replay planning, and corresponding tests. See the upstream [NeuracoreAI/BiGym](https://github.com/NeuracoreAI/bigym) project.
+The entrypoint performs:
 
-### 3. Build gsplat for ROCm
+1. safe extraction and official-pose-to-COLMAP conversion;
+2. known-pose SIFT matching and sparse initialization;
+3. `default` and `mcmc` 30k candidates;
+4. fail-closed selection requiring PSNR ≥ 30, SSIM ≥ 0.92, LPIPS ≤ 0.15;
+5. Graphdeco SH3 PLY, camera path, MuJoCo OBB, Sim(3), and room-layer export;
+6. optional 300-frame BiGym three-camera acceptance.
+
+See the [reconstruction guide](reconstruction/README.md).
+
+### 3. Run the shell on AMD Radeon
+
+Start from an AMD-supported ROCm/PyTorch environment:
 
 ```bash
+make preflight
 make build-gsplat
-```
 
-The script installs the pinned `gsplat==1.4.0` release, applies the [ROCm/gfx1100 patch](patches/gsplat-1.4.0-rocm-gfx1100.patch), creates an isolated Clang wrapper, and renders an actual 64×64 Gaussian scene. Continue only when it prints `GATE_OK True`.
-
-### 4. Stage the 3DGS room shell
-
-This repository does not include DL3DV source images, videos, or derived PLY files. Read the [data and licensing boundaries](docs/data-license.md), then legally obtain or reconstruct the following three layers:
-
-```text
-walls_fixed_kitchen.ply
-floor_perimeter.ply
-ceiling_lights.ply
-```
-
-Set `SHELL_WALLS`, `SHELL_FLOOR`, and `SHELL_CEILING`, then run:
-
-```bash
+export SHELL_WALLS=/path/to/walls_fixed_kitchen.ply
+export SHELL_FLOOR=/path/to/floor_perimeter.ply
+export SHELL_CEILING=/path/to/ceiling_lights.ply
 make stage-shell
 ```
 
-This stages the PLY files together with the validated [profile](configs/dl3dv-kitchen-cutlery32-profile.json) and [alignment](configs/alignment-appearance-optimized.json), then prints SHA-256 checksums. It never modifies the source PLY files.
+`build-gsplat` pins `gsplat==1.4.0`, applies the measured ROCm/gfx1100 patch,
+and renders an actual 64×64 Gaussian scene. Continue only after `GATE_OK True`.
 
-### 5. Generate and verify a 32-trajectory replay plan
+### 4. Collect 32 Cutlery episodes
 
-[replay-plan.example.json](configs/replay-plan.example.json) is a schema example and cannot be used directly for collection. Generate 32 unique UUIDs from locally authorized official BiGym demonstrations, then run camera-free physics replay validation:
-
-```bash
-"$VENV/bin/python" "$BIGYM_DIR/d/replay_generation/replay_plan.py" \
-  --compatibility-report /path/to/compatibility-report.json \
-  --request DishwasherUnloadCutleryLong=32 \
-  --output "$REPLAY_PLAN"
-
-cd "$BIGYM_DIR/d/replay_generation"
-"$VENV/bin/python" verify_replay_plan.py \
-  --replay-plan "$REPLAY_PLAN" \
-  --output /path/to/replay-plan-verification.json
-```
-
-Exclude `reward=0` trajectories, missing UUIDs, and trajectories that fail after version drift. Delta-source trajectories are converted into consistent absolute training labels, with joint-state equivalence checks.
-
-### 6. Run one smoke episode, then collect 32
-
-Temporarily trim the replay plan to one trajectory. After it passes `reward=1`, three-camera video checks, and strict 3DGS validation, start the formal collection:
+Build a 32-UUID replay plan from locally authorized official demonstrations and
+run camera-free physics preflight first. Exclude `reward=0`, missing UUIDs, and
+replays that fail after simulator-version drift.
 
 ```bash
 make collect
-```
-
-The collector closes Parquet and video writers at each episode boundary. Progress advances only after an episode is independently readable, preventing interrupted Parquet files from being treated as resumable data.
-
-### 7. Validate the complete collection and clean Gaussians
-
-```bash
-"$VENV/bin/python" -m pip install -r requirements-validation.txt
 make validate
 ```
 
-The validator checks 32 Parquet files, 32 episode metadata rows, 32 unique UUIDs, 32 successful rewards, 21,018 finite numeric rows, and all 96 videos for codec, resolution, FPS, frame counts, and full frame-by-frame decoding. It also verifies the exact strict-render count.
+The collector commits one episode at a time. Validation checks Parquet files,
+episode metadata, rewards, finite state/action tensors, codec/FPS/frame counts,
+full video decoding, strict render counts, and SHA256SUMS.
 
-Visibly incorrect points are cleaned into a new copy so the original PLY is preserved:
+## Data boundary
+
+| Content | Public Git | Authorized local storage |
+| --- | :---: | :---: |
+| Source identity, revision, size, hash, license | ✅ | ✅ |
+| Synthetic Gaussian CI fixture | generator ✅ | ✅ |
+| DL3DV source ZIP/images | ❌ | `data/private/` |
+| Complete derived PLY/checkpoint | ❌ | user-controlled artifact store |
+| Official demonstrations/real UUIDs | ❌ | user-controlled demo store |
+| Full 32-episode LeRobot videos | ❌ | user-controlled dataset root |
+| Sanitized metrics, contact sheet, cleanup A/B | ✅ | ✅ |
+
+This separation is intentional: processing code and data contracts are public,
+while every user obtains restricted inputs under the upstream terms. See the
+[data plane](data/README.md) and [license boundary](docs/data-license.md).
+
+## Repository layout
+
+```text
+.
+├── reconstruction/        # acquisition, COLMAP, training, PLY and shell export
+│   ├── bin/               # portable acquisition and reconstruction commands
+│   ├── src/               # measured Python implementation
+│   ├── config/            # version and quality pins
+│   └── reference/         # exact A800 provenance runner
+├── data/
+│   ├── manifests/         # source, reconstruction, and Cutlery32 contracts
+│   └── samples/           # synthetic smoke documentation
+├── patches/               # BiGym shell and gsplat ROCm patches
+├── scripts/               # AMD runtime, collection, validation, cleanup, release
+├── configs/               # measured Sim(3), visual profile, replay schema
+├── evidence/              # sanitized machine-readable evidence
+├── docs/                  # architecture, ROCm, collection, licensing, debugging
+└── .github/workflows/     # leak, syntax, patch, and reconstruction CI
+```
+
+## Gaussian cleanup
+
+Cleanup always writes a new asset and preserves the authoritative PLY:
 
 ```bash
-"$VENV/bin/python" scripts/clean_gaussian_ply.py \
+python scripts/clean_gaussian_ply.py \
   --input "$SHELL_DIR/walls_fixed_kitchen.ply" \
   --output "$SHELL_DIR-cleaned/walls_fixed_kitchen.ply" \
   --manifest "$SHELL_DIR-cleaned/walls.cleaning.json" \
-  --bbox-min=-10,-10,-10 \
-  --bbox-max=10,10,10 \
-  --max-radius 10 \
-  --max-world-scale 0.75 \
-  --min-alpha 0.001 \
-  --selection-note "conservative room envelope; original preserved"
+  --bbox-min=-10,-10,-10 --bbox-max=10,10,10 \
+  --max-radius 10 --max-world-scale 0.75 --min-alpha 0.001
 ```
 
 ![Three synchronized camera views before cleanup](docs/images/cleanup-before.png)
-
 ![Three synchronized camera views after cleanup](docs/images/cleanup-after.png)
 
-The validated cleanup retained 772,721 of 1,000,000 Gaussians. A complete smoke episode on the cleaned shell still achieved `reward=1.0`. SSIM between original and cleaned video streams was 0.968, 0.986, and 0.982 across the three cameras, while visibly reducing low-alpha floating haze.
+The measured cleanup retained 772,721 of 1,000,000 Gaussians. It reduced
+low-alpha floating haze but cannot repair stretching caused by missing source
+view coverage.
 
-## Repository Layout
+## Documentation
 
-| Path | Contents |
-| --- | --- |
-| `patches/` | Validated BiGym integration patch and precise gsplat ROCm/gfx1100 patch |
-| `scripts/` | Environment preflight, installation, build, smoke, replay, collection, validation, and cleanup tools |
-| `configs/` | Validated coordinate alignment, visual-shell profile, and replay-plan schema |
-| `evidence/` | Sanitized machine-readable summaries for the formal 32-episode collection and cleanup A/B |
-| `docs/` | Architecture, ROCm adaptation, collection validation, data licensing, and troubleshooting |
-| `.github/workflows/` | Public-repository syntax, patch, JSON, secret, and large-file checks |
-
-## Further Reading
-
-- [End-to-end implementation and coordinate systems](docs/01-end-to-end.md)
+- [Reconstruction pipeline](reconstruction/README.md)
+- [End-to-end architecture](docs/architecture/end-to-end.md)
+- [Coordinates and physics isolation](docs/01-end-to-end.md)
 - [ROCm / gsplat adaptation](docs/02-rocm-gsplat.md)
 - [32-episode collection and replay reliability](docs/03-collection.md)
 - [Integrity validation and Gaussian cleanup](docs/04-validation-and-cleaning.md)
-- [Data and licensing boundaries](docs/data-license.md)
+- [Data and licensing boundary](docs/data-license.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
-## License
+## License and citation
 
-Repository code is licensed under [Apache-2.0](LICENSE). Third-party code and data remain subject to their respective licenses. Research-result contact sheets under `docs/images/` are governed separately by the [image provenance and CC BY-NC notice](docs/images/README.md). DL3DV-10K requires separate access approval and acceptance of its Terms of Use; this repository grants no data-use or redistribution rights.
+Original repository code is licensed under [Apache-2.0](LICENSE). Third-party
+code and data remain under their respective terms; see [NOTICE](NOTICE) and
+[CITATION.cff](CITATION.cff). This repository grants no redistribution rights
+for DL3DV data, derived PLYs, BiGym demonstrations, or collected videos.

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "asset_id": "dl3dv-kitchen-951f9db189a7",
+  "status": "authorized_source_required",
+  "source": {
+    "dataset": "DL3DV-10K / DL3DV-ALL-960P",
+    "repo_id": "DL3DV/DL3DV-ALL-960P",
+    "revision": "abb4dab0d4b6d93c32e6d901c06c35bad03210fb",
+    "filename": "3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip",
+    "scene_hash": "951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86",
+    "archive_bytes": 220332698,
+    "archive_sha256": "4a6f3eac1ff4d2545b655fdfe5c6edd7e08f92e847584fabf933a09e592be563",
+    "license": "CC BY-NC 4.0 plus DL3DV Terms of Use; non-commercial research only"
+  },
+  "verified_inventory": {
+    "zip_entries": 357,
+    "images": 355,
+    "image_resolution": [960, 540],
+    "pose_files": ["transforms.json"],
+    "initial_points_after_voxel": 26505
+  },
+  "redistribution": {
+    "source_archive_in_repo": false,
+    "source_images_in_repo": false,
+    "derived_full_ply_in_repo": false,
+    "reason": "Each user must independently accept the current dataset terms."
+  }
+}
