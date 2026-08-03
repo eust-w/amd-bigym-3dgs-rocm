@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-08-04",
+  "hardware": {
+    "gpu": "AMD Radeon PRO W7900D",
+    "architecture": "gfx1100",
+    "reconstruction_torch": "2.8.0+rocm7.13.0a20260513",
+    "reconstruction_hip": "7.13.26183-83e9908b71",
+    "bigym_torch": "2.9.1+gitff65f5b",
+    "bigym_hip": "7.2.53211-e1a6bc5663"
+  },
+  "source": {
+    "dataset": "DL3DV-ALL-960P",
+    "scene": "951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86",
+    "revision": "abb4dab0d4b6d93c32e6d901c06c35bad03210fb",
+    "registered_images": 332,
+    "training_images": 331,
+    "held_out_images": 1
+  },
+  "reconstruction": {
+    "status": "passed_metrics_and_visual_review",
+    "backend": "OpenSplat HIP",
+    "opensplat_commit": "9fb62fde8b7b8c416121d3cbdcda278ffd9682f7",
+    "steps": 30000,
+    "held_out_frame": "frame_00159.png",
+    "metrics": {
+      "psnr_db": 33.83256364599145,
+      "ssim": 0.971857488155365,
+      "lpips_alex": 0.0384274497628212
+    },
+    "ply": {
+      "gaussians": 1198821,
+      "bytes": 297309190,
+      "sha256": "208cbbb9c69c6319e42da2828b37ac816556b6acb48828164507ca82d302b57d"
+    }
+  },
+  "manual_cleanup": {
+    "status": "passed_visual_safe",
+    "policy": "remove spatial outliers only",
+    "removed_gaussians": 177,
+    "rejected_policy": {
+      "name": "world_scale_gt_1.5",
+      "candidate_gaussians": 79,
+      "reason": "introduced purple floor residuals in the held-out frame"
+    },
+    "ply": {
+      "gaussians": 1198644,
+      "bytes": 297265294,
+      "sha256": "a1fb19bbb45f4dcf0f39fbc2ad38230a592409fd8acf51af78f530f4a5d10a7a"
+    }
+  },
+  "cutlerylong_shell": {
+    "status": "passed_export_and_native_source_camera_render",
+    "central_workspace_visible_gaussian_violations": 0,
+    "retained_fraction": 0.82694528150143,
+    "layers": {
+      "walls": 886194,
+      "floor": 13909,
+      "ceiling": 91110,
+      "combined": 991213
+    },
+    "combined_ply": {
+      "bytes": 245822453,
+      "sha256": "c277948cf584397e8fc7a7524df61fe845718d200491ea4ffa39345d98e9d50f"
+    }
+  },
+  "bigym": {
+    "task": "DishwasherUnloadCutleryLong",
+    "native_smoke": {
+      "status": "passed",
+      "frames": 32,
+      "seed": 20260804,
+      "action_dimension": 16,
+      "maximum_contact_count": 3,
+      "terminated": false,
+      "cameras": [
+        "head",
+        "left_wrist",
+        "right_wrist"
+      ]
+    },
+    "live_3dgs_compositing": {
+      "status": "blocked_gsplat_projection_segfault",
+      "exit_code": 139,
+      "formal_shell_acceptance": "not_passed",
+      "shell_backed_collection": "not_run"
+    }
+  },
+  "independent_native_collection": {
+    "status": "passed",
+    "scope": "one native BiGym probe episode; not 3DGS-shell-backed",
+    "episodes": 1,
+    "frames": 683,
+    "reward_from_run_receipt": 1.0,
+    "parquet_files": 1,
+    "videos": 3,
+    "video_bytes": 16596729,
+    "receipt_sha256": "9066c8fcaf1b84ca9d16c1842c514e07b60e9d93099887cef099371845e99ae7",
+    "real_demo_uuid_publication": "withheld"
+  },
+  "historical_cutlery32_archive": {
+    "status": "preserved_unchanged",
+    "episodes": 32,
+    "bytes": 484207348,
+    "relationship": "historical A800-parity archive; not produced by this live gfx1100 3DGS run"
+  }
+}

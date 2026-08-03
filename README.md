@@ -20,12 +20,13 @@ demonstrations, and the 32-episode video dataset remain outside this repository
 and are connected through auditable manifests, SHA-256 contracts, and
 license-aware acquisition tools.
 
-> Current status: the technical pipeline and curated three-camera visual review
-> are complete. The shell, robot, and workbench are visible. A known limitation
-> remains: fixed H1 head and wrist cameras extend beyond parts of the source
-> capture trajectory, so a few low views can still appear soft or stretched.
-> AMD-native 30k reconstruction is a separate acceptance gate; a running job or
-> a valid PLY is not treated as final visual-quality approval.
+> Verified on 2026-08-04: the AMD-native OpenSplat HIP 30k reconstruction,
+> conservative manual cleanup, task-aware shell export, and native source-camera
+> shell renders passed on a Radeon PRO W7900D (`gfx1100`). Native BiGym and one
+> independent 683-frame CutleryLong episode also passed. **Live 3DGS compositing
+> inside BiGym is still blocked**: the strict gsplat-backed probe exits `139`.
+> Therefore no gfx1100 shell-backed collection is claimed complete. See the
+> [measured execution report](docs/06-gfx1100-execution-report.md).
 
 ![Four selected episodes across three cameras](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
@@ -36,16 +37,21 @@ license-aware acquisition tools.
 | Source | DL3DV-ALL-960P, 355 `960×540` images, pinned revision and archive hash |
 | A800 reconstruction | gsplat MCMC, 30k steps, 1,000,000 Gaussians |
 | Held-out metrics | PSNR `35.1623` / SSIM `0.9589` / LPIPS `0.1307` |
-| AMD-native training proof | OpenSplat HIP on `gfx1100`; separate 332-image kitchen, 10k, PSNR `32.153`, SSIM `0.963865` |
-| AMD runtime | Radeon `gfx1100`, ROCm/HIP, native gsplat gate passed |
+| AMD-native reconstruction | OpenSplat HIP, 30k, 1,198,821 Gaussians, PSNR `33.8326` / SSIM `0.971857` / LPIPS `0.038427` |
+| Manual visual-safe cleanup | 177 spatial outliers removed; 1,198,644 Gaussians; scale rule rejected after A/B review |
+| CutleryLong shell | 991,213 Gaussians; zero central-workspace violations; native OpenSplat views passed |
+| Native BiGym on AMD | 32-frame, three-camera smoke passed |
+| Live 3DGS in BiGym | **Blocked**: strict gsplat-backed probe exits `139`; formal shell acceptance not passed |
 | BiGym task | `DishwasherUnloadCutleryLong` |
-| Formal data | `32/32` episodes, `32/32` unique UUIDs, all `reward=1.0` |
+| Independent AMD smoke data | 1 native-only episode, 683 frames, receipt `reward=1.0`; not shell-backed |
+| Historical formal data | `32/32` episodes, `32/32` unique UUIDs, all `reward=1.0`; A800-parity archive preserved |
 | LeRobot v3 | `21,018` frames, `96/96` H.264 videos fully decoded |
-| 3DGS | `63,150` strict renders with no fallback |
+| Historical A800 3DGS | `63,150` strict renders with no fallback |
 | Physics isolation | added body / geom / collision = `0 / 0 / 0` |
 | Published shell | 4 PLYs, gated Hugging Face release, remote SHA-256 verified |
 
-See the [A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
+See the [gfx1100 execution evidence](evidence/gfx1100-20260804-summary.json),
+[A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json),
 and [formal32 validation summary](evidence/formal32-validation-summary.json).
 
 ## Download the published 3DGS shell
@@ -77,13 +83,14 @@ flowchart LR
   C --> D{PSNR / SSIM / LPIPS gate}
   D --> E[Graphdeco SH3 PLY]
   E --> F[Sim3 + wall/floor/ceiling shell]
-  F --> G[AMD ROCm gsplat]
-  G --> H[MuJoCo segmentation composite]
+  F --> G{AMD ROCm gsplat probe}
+  G -. exit 139: blocked .-> H[MuJoCo segmentation composite]
   I[Official BiGym demonstrations] --> J[20 Hz reward preflight]
   J --> K[32 unique replay UUIDs]
-  H --> L[LeRobot v3 collection]
+  H --> L[Shell-backed LeRobot v3 collection]
   K --> L
   L --> M[Parquet + 96 videos + visual review]
+  N[Native BiGym smoke] --> O[Independent 1-episode probe: passed]
 ```
 
 3DGS supplies the visual background only. The robot, workbench, dishwasher,
@@ -202,10 +209,14 @@ export SHELL_CEILING=/path/to/ceiling_lights.ply
 make stage-shell
 ```
 
-`build-gsplat` pins `gsplat==1.4.0`, applies the measured ROCm/gfx1100 patch,
-and renders an actual 64×64 Gaussian scene. Continue only after `GATE_OK True`.
+`build-gsplat` pins `gsplat==1.4.0` and applies the measured ROCm/gfx1100 patch.
+`scripts/rocm_gsplat_sitecustomize.py` can opt in to an already-built extension
+without modifying site-packages. Importing that extension is not sufficient:
+the current strict BiGym shell probe reaches the rendering path and exits `139`.
+Do not start a shell-backed formal collection until the probe renders all three
+cameras with no fallback. See [ROCm / gsplat adaptation](docs/02-rocm-gsplat.md).
 
-### 4. Collect 32 Cutlery episodes
+### 4. Collect Cutlery episodes after the live-shell gate
 
 Build a 32-UUID replay plan from locally authorized official demonstrations and
 run camera-free physics preflight first. Exclude `reward=0`, missing UUIDs, and
@@ -216,7 +227,10 @@ make collect
 make validate
 ```
 
-The collector commits one episode at a time. Validation checks Parquet files,
+The 2026-08-04 Radeon run collected one isolated **native-only** 683-frame
+episode with receipt `reward=1.0`; it did not overwrite the retained 32-episode
+A800-parity archive and is not evidence of live-3DGS collection. The collector
+commits one episode at a time. Validation checks Parquet files,
 episode metadata, rewards, finite state/action tensors, codec/FPS/frame counts,
 full video decoding, strict render counts, and SHA256SUMS.
 
@@ -258,7 +272,7 @@ upstream inputs independently. See the [data plane](data/README.md) and
 └── .github/workflows/     # leak, syntax, patch, and reconstruction CI
 ```
 
-## Gaussian cleanup
+## Historical A800 Gaussian cleanup
 
 Cleanup always writes a new asset and preserves the authoritative PLY:
 
@@ -274,9 +288,11 @@ python scripts/clean_gaussian_ply.py \
 ![Three synchronized camera views before cleanup](docs/images/cleanup-before.png)
 ![Three synchronized camera views after cleanup](docs/images/cleanup-after.png)
 
-The measured cleanup retained 772,721 of 1,000,000 Gaussians. It reduced
+The historical A800 cleanup retained 772,721 of 1,000,000 Gaussians. It reduced
 low-alpha floating haze but cannot repair stretching caused by missing source
-view coverage.
+view coverage. The accepted gfx1100 cleanup is intentionally more conservative:
+it removes 177 spatial outliers and is documented in the
+[2026-08-04 execution report](docs/06-gfx1100-execution-report.md).
 
 ## Documentation
 
@@ -285,6 +301,7 @@ view coverage.
 - [Coordinates and physics isolation](docs/01-end-to-end.md)
 - [ROCm / gsplat adaptation](docs/02-rocm-gsplat.md)
 - [AMD gfx1100 native reconstruction](docs/05-amd-native-reconstruction.md)
+- [AMD gfx1100 measured execution report](docs/06-gfx1100-execution-report.md)
 - [32-episode collection and replay reliability](docs/03-collection.md)
 - [Integrity validation and Gaussian cleanup](docs/04-validation-and-cleaning.md)
 - [Data and licensing boundary](docs/data-license.md)

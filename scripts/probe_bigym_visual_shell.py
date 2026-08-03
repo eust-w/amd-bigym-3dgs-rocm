@@ -31,13 +31,25 @@ THRESHOLDS = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", type=Path, required=True)
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        help="Scene-shell profile; required unless --native-only is used.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--task", default="DishwasherLoadPlates")
     parser.add_argument("--frames", type=int, default=30)
     parser.add_argument("--seed", type=int, default=20260802)
     parser.add_argument("--source-camera-index", type=int)
-    return parser.parse_args()
+    parser.add_argument(
+        "--native-only",
+        action="store_true",
+        help="Run and report the native MuJoCo/BiGym camera smoke without 3DGS.",
+    )
+    args = parser.parse_args()
+    if not args.native_only and args.profile is None:
+        parser.error("--profile is required unless --native-only is used")
+    return args
 
 
 def digest(frame: np.ndarray) -> str:
@@ -76,9 +88,9 @@ def fit_probe_alignment(
     )
     base_rotation = normalized_rotation(base_transform[:3, :3])
     base_scale = float(np.mean(np.linalg.norm(base_transform[:3, :3], axis=0)))
-    camera_payload = json.loads(
-        (source_dir / "camera-path.json").read_text(encoding="utf-8")
-    )
+    camera_name = profile.get("camera_path", {}).get("path", "camera-path.json")
+    camera_source = source_dir / camera_name
+    camera_payload = json.loads(camera_source.read_text(encoding="utf-8"))
     source_cameras = np.asarray(camera_payload["camtoworlds"], dtype=np.float64)
     base_positions = (
         source_cameras[:, :3, 3] @ base_transform[:3, :3].T
@@ -262,7 +274,7 @@ def fit_probe_alignment(
     camera_target = output_dir / "camera-path.json"
     if camera_target.exists() or camera_target.is_symlink():
         camera_target.unlink()
-    os.symlink((source_dir / "camera-path.json").resolve(), camera_target)
+    os.symlink(camera_source.resolve(), camera_target)
     profile["status"] = "visual_probe_only"
     profile["alignment"] = {"path": "alignment.json", "quality": quality}
     profile["camera_integration"] = calibration
@@ -305,14 +317,18 @@ def main() -> None:
     native_times: list[float] = []
     native_contacts: list[int] = []
     native_terminated: list[bool] = []
+    native_visual_frames: list[Image.Image] = []
     target_cameras: dict[str, dict[str, np.ndarray]] = {}
     try:
         observation, _ = native.reset(seed=args.seed)
         native_initial_hashes = {
             name: digest(observation[f"rgb_{name}"]) for name, *_ in CAMERAS
         }
+        initial_mosaic = Image.fromarray(mosaic(observation), "RGB")
+        initial_mosaic.save(args.output / "native-initial.png")
+        native_visual_frames.append(initial_mosaic)
         camera_contract = {}
-        for name, _feature, resolution, fovy in CAMERAS:
+        for name, _feature, resolution, fovy, *_pose in CAMERAS:
             camera_id = native._cameras_map[name][0]
             target_cameras[name] = {
                 "position": np.asarray(native._mojo.data.cam_xpos[camera_id]).copy(),
@@ -339,14 +355,56 @@ def main() -> None:
             native_times.append(float(native.action_mode._mojo.data.time))
             native_contacts.append(int(native._mojo.data.ncon))
             native_terminated.append(bool(terminated))
+            native_visual_frames.append(Image.fromarray(mosaic(observation), "RGB"))
         native_final_hashes = {
             name: digest(observation[f"rgb_{name}"]) for name, *_ in CAMERAS
         }
         Image.fromarray(mosaic(observation), "RGB").save(
             args.output / "native-final.png"
         )
+        native_visual_frames[0].save(
+            args.output / "native-smoke.gif",
+            save_all=True,
+            append_images=native_visual_frames[1:],
+            duration=300,
+            loop=0,
+        )
     finally:
         native.close()
+
+    if args.native_only:
+        report = {
+            "schema_version": 1,
+            "status": "native_smoke_completed",
+            "technical_probe_status": "passed",
+            "formal_acceptance": "not_run",
+            "visual_shell": "not_run",
+            "task": args.task,
+            "seed": args.seed,
+            "frames": args.frames,
+            "action_dimension": int(actions[0].size),
+            "camera_contract": camera_contract,
+            "camera_hashes": {
+                "initial": native_initial_hashes,
+                "final": native_final_hashes,
+            },
+            "native_physics": {
+                "final_time": native_times[-1],
+                "maximum_contact_count": max(native_contacts),
+                "termination_flags": native_terminated,
+            },
+            "artifacts": {
+                "native_initial": str(args.output / "native-initial.png"),
+                "native_final": str(args.output / "native-final.png"),
+                "native_gif": str(args.output / "native-smoke.gif"),
+            },
+        }
+        (args.output / "native-smoke-report.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(json.dumps(report, ensure_ascii=False))
+        return
 
     calibrated_profile, quality = fit_probe_alignment(
         args.profile,

@@ -16,6 +16,7 @@ ROCM_RUNNER = ROOT / "reconstruction/bin/reconstruct_rocm_gfx1100.sh"
 ROCM_BUILDER = ROOT / "reconstruction/bin/build_opensplat_rocm_gfx1100.sh"
 ROCM_LAUNCHER = ROOT / "reconstruction/bin/launch_rocm_gfx1100_30k.sh"
 ROCM_PATCH = ROOT / "patches/opensplat-1.1.5-rocm-gfx1100.patch"
+SHELL_EXPORTER = ROOT / "reconstruction/src/export_scene_shell.py"
 
 
 def candidate(root: Path, name: str, metrics: dict[str, float]) -> None:
@@ -77,6 +78,10 @@ def main() -> None:
     builder = ROCM_BUILDER.read_text(encoding="utf-8")
     launcher = ROCM_LAUNCHER.read_text(encoding="utf-8")
     patch = ROCM_PATCH.read_text(encoding="utf-8")
+    shell_exporter = SHELL_EXPORTER.read_text(encoding="utf-8")
+    bigym_probe = (ROOT / "scripts/probe_bigym_visual_shell.py").read_text(
+        encoding="utf-8"
+    )
     assert "ROCM_ARCH:-gfx1100" in runner
     assert "TRAIN_STEPS:-${STEPS:-30000}" in runner
     assert '"quality_status": "awaiting_metrics_and_visual_review"' in runner
@@ -85,6 +90,14 @@ def main() -> None:
     assert "CMAKE_HIP_ARCHITECTURES=\"$ROCM_ARCH\"" in builder
     assert "TRAIN_STEPS=\"${TRAIN_STEPS:-30000}\"" in launcher
     assert "ROCM_HOME" in patch and "GPU_INCLUDE_DIRS" in patch
+    assert (
+        "center_violation = shell & inside_center & ~floor & ~ceiling"
+        in shell_exporter
+    )
+    assert 'camera_path.write_bytes(args.camera_path.read_bytes())' in shell_exporter
+    assert '"camera_path": {' in shell_exporter
+    assert 'if not args.native_only and args.profile is None:' in bigym_probe
+    assert '"visual_shell": "not_run"' in bigym_probe
 
     print("RECONSTRUCTION_CONTRACT_TESTS_OK")
 

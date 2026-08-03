@@ -432,6 +432,8 @@ def main() -> None:
     shell = floor_perimeter | ceiling_lights | walls_decor
 
     args.output.mkdir(parents=True, exist_ok=True)
+    camera_path = args.output / "camera-path.json"
+    camera_path.write_bytes(args.camera_path.read_bytes())
     masks = {
         "walls_fixed_kitchen.ply": walls_decor,
         "floor_perimeter.ply": floor_perimeter,
@@ -448,7 +450,10 @@ def main() -> None:
             "sha256": sha256(path),
         }
 
-    center_violation = shell & inside_center & ~floor
+    # Floor and ceiling are intentional horizontal shell layers. The central
+    # exclusion gate applies only to non-horizontal appearance splats that can
+    # visually intrude into the robot/table workspace.
+    center_violation = shell & inside_center & ~floor & ~ceiling
     if center_violation.any():
         raise RuntimeError(
             f"center exclusion contains {int(center_violation.sum())} shell Gaussians"
@@ -583,6 +588,11 @@ def main() -> None:
         "alignment": {
             "path": alignment_path.name,
             "sha256": sha256(alignment_path),
+        },
+        "camera_path": {
+            "path": camera_path.name,
+            "sha256": sha256(camera_path),
+            "source": str(args.camera_path),
         },
     }
     profile_path = args.output / "scene-shell-profile.json"

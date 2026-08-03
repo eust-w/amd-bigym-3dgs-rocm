@@ -16,11 +16,11 @@ AMD ROCm 渲染 → BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工
 门控数据集公开。受上游条款约束的原图、官方 demonstrations 和 32 条视频数据
 仍不进入本仓库，而是通过可审计 manifest、SHA-256 契约和授权下载入口连接到代码。
 
-> 当前结论：技术链路与精选三相机画面复核均已完成。房间壳、机器人和工作台
-> 完整可见；已知限制是固定 H1 头部/腕部相机超出部分源拍摄轨迹，少数低视角
-> 仍可能柔化或拉伸。
-> AMD 原生 30k 重建是独立验收门：进程在运行或 PLY 能打开，都不等于最终
-> 视觉质量已经通过。
+> 2026-08-04 实测结论：AMD Radeon PRO W7900D（`gfx1100`）上的 OpenSplat
+> HIP 30k 重建、保守人工清理、任务感知房间壳导出和源相机原生渲染均已通过；
+> 原生 BiGym 与独立 1 条 683 帧 CutleryLong 采集也通过。**BiGym 内实时 3DGS
+> 合成仍阻塞**：严格 gsplat 探针以 `139` 退出，因此不能宣称 gfx1100 房间壳
+> 采集已经完成。详见[实测执行报告](docs/06-gfx1100-execution-report.md)。
 
 ![32 条数据中 4 个 episode × 3 路相机精选画面](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
@@ -31,16 +31,21 @@ AMD ROCm 渲染 → BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工
 | 源数据 | DL3DV-ALL-960P，355 张 `960×540` 图片，固定 revision 与 archive SHA |
 | A800 重建 | gsplat MCMC，30k steps，1,000,000 Gaussians |
 | held-out | PSNR `35.1623` / SSIM `0.9589` / LPIPS `0.1307` |
-| AMD 原生训练实跑 | OpenSplat HIP / `gfx1100`；独立 332 图厨房，10k，PSNR `32.153`，SSIM `0.963865` |
-| AMD 运行 | Radeon `gfx1100`，ROCm/HIP，gsplat native gate 通过 |
+| AMD 原生重建 | OpenSplat HIP，30k，1,198,821 Gaussian，PSNR `33.8326` / SSIM `0.971857` / LPIPS `0.038427` |
+| 人工 visual-safe 清理 | 仅删除 177 个空间离群点；保留 1,198,644 Gaussian；尺度规则经 A/B 复核后否决 |
+| CutleryLong 房间壳 | 991,213 Gaussian；中央工作区违规点为 0；OpenSplat 原生视角通过 |
+| AMD 原生 BiGym | 32 帧、三相机 smoke 通过 |
+| BiGym 实时 3DGS | **阻塞**：严格 gsplat 探针以 `139` 退出，正式房间壳验收未通过 |
 | BiGym 任务 | `DishwasherUnloadCutleryLong` |
-| 正式数据 | `32/32` episode、`32/32` 唯一 UUID、全部 `reward=1.0` |
+| AMD 独立 smoke 数据 | 原生模式 1 条、683 帧、回执 `reward=1.0`；不含 3DGS 壳 |
+| 历史正式数据 | `32/32` episode、`32/32` 唯一 UUID、全部 `reward=1.0`；A800-parity 归档保持不变 |
 | LeRobot v3 | `21,018` frames、`96/96` H.264 视频逐帧解码 |
-| 3DGS | `63,150` 次严格渲染，无 fallback |
+| 历史 A800 3DGS | `63,150` 次严格渲染，无 fallback |
 | 物理隔离 | 新增 body / geom / collision = `0 / 0 / 0` |
 | 已发布房间壳 | 4 个 PLY，Hugging Face 门控发布，远端 SHA-256 已验证 |
 
-机器可读证据见 [A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
+机器可读证据见 [gfx1100 execution evidence](evidence/gfx1100-20260804-summary.json)、
+[A800 reconstruction manifest](data/manifests/a800-reconstruction.public.json)
 和 [formal32 validation](evidence/formal32-validation-summary.json)。
 
 ## 下载已发布的 3DGS 房间壳
@@ -72,13 +77,14 @@ flowchart LR
   C --> D{PSNR / SSIM / LPIPS gate}
   D --> E[Graphdeco SH3 PLY]
   E --> F[Sim3 + 墙/地/顶三层壳]
-  F --> G[AMD ROCm gsplat]
-  G --> H[MuJoCo segmentation 合成]
+  F --> G{AMD ROCm gsplat 探针}
+  G -. exit 139：阻塞 .-> H[MuJoCo segmentation 合成]
   I[官方 BiGym demonstrations] --> J[20 Hz reward 预检]
   J --> K[32 个唯一 replay UUID]
-  H --> L[LeRobot v3 采集]
+  H --> L[带房间壳的 LeRobot v3 采集]
   K --> L
   L --> M[Parquet + 96 视频 + 视觉验收]
+  N[原生 BiGym smoke] --> O[独立 1 条探针：通过]
 ```
 
 3DGS 仅提供视觉背景。机器人、工作台、洗碗机、抽屉和道具继续由 MuJoCo
@@ -191,10 +197,13 @@ export SHELL_CEILING=/path/to/ceiling_lights.ply
 make stage-shell
 ```
 
-`build-gsplat` 固定 `gsplat==1.4.0`，应用实测的 ROCm/gfx1100 补丁，并真正
-渲染一个 64×64 Gaussian 场景；只有 `GATE_OK True` 才允许继续。
+`build-gsplat` 固定 `gsplat==1.4.0` 并应用实测 ROCm/gfx1100 补丁。
+`scripts/rocm_gsplat_sitecustomize.py` 可以在不修改 site-packages 的前提下加载
+已编译扩展，但扩展可导入并不等于端到端通过：当前严格 BiGym 房间壳探针进入
+渲染路径后以 `139` 退出。必须等三相机无 fallback 合成通过后，才能启动带壳的
+正式采集。详见 [ROCm / gsplat 适配](docs/02-rocm-gsplat.md)。
 
-### 4. 采集 Cutlery 32 条
+### 4. 实时房间壳 gate 通过后再采集 Cutlery
 
 先在本地授权的 official demonstrations 上生成 32 个唯一 UUID 并进行无相机
 物理回放。`reward=0`、缺失 UUID 或版本漂移后的失败轨迹不得进入正式计划。
@@ -204,7 +213,9 @@ make collect
 make validate
 ```
 
-采集器采用 episode 级事务写入；验收器检查 Parquet、episode metadata、奖励、
+2026-08-04 的 Radeon 实跑只新增了 1 条隔离的**原生模式** 683 帧数据，回执
+`reward=1.0`；它没有覆盖保留的 32 条 A800-parity 归档，也不证明实时 3DGS
+采集通过。采集器采用 episode 级事务写入；验收器检查 Parquet、episode metadata、奖励、
 状态/动作有限值、视频编码/帧数/逐帧解码、严格渲染次数和 SHA256SUMS。
 
 ## 数据边界
@@ -244,7 +255,7 @@ make validate
 └── .github/workflows/     # 数据泄漏、语法、patch 和合成重建 CI
 ```
 
-## Gaussian 清理
+## 历史 A800 Gaussian 清理
 
 清理始终生成副本，不覆盖权威 PLY：
 
@@ -260,8 +271,10 @@ python scripts/clean_gaussian_ply.py \
 ![清理前同帧三相机](docs/images/cleanup-before.png)
 ![清理后同帧三相机](docs/images/cleanup-after.png)
 
-实验中从 1,000,000 个 Gaussian 中保留 772,721 个。清理减少低 alpha 漂浮
-雾块，但无法修复源视角未覆盖造成的纹理拉伸。
+历史 A800 实验从 1,000,000 个 Gaussian 中保留 772,721 个。清理减少低 alpha
+漂浮雾块，但无法修复源视角未覆盖造成的纹理拉伸。gfx1100 本次采用更保守的
+规则，只删除 177 个空间离群点，详见
+[2026-08-04 实测执行报告](docs/06-gfx1100-execution-report.md)。
 
 ## 文档
 
@@ -270,6 +283,7 @@ python scripts/clean_gaussian_ply.py \
 - [坐标系与物理隔离](docs/01-end-to-end.md)
 - [ROCm / gsplat 适配](docs/02-rocm-gsplat.md)
 - [AMD gfx1100 原生重建](docs/05-amd-native-reconstruction.md)
+- [AMD gfx1100 实测执行报告](docs/06-gfx1100-execution-report.md)
 - [32 条采集与回放失败治理](docs/03-collection.md)
 - [完整性验收与异常点清理](docs/04-validation-and-cleaning.md)
 - [数据与许可边界](docs/data-license.md)

@@ -4,18 +4,22 @@
 `gfx1100`/OpenSplat HIP。A800 清单仍作为历史基准保留，但不是这条入口的运行
 依赖。
 
-## 已实测边界
+## 2026-08-04 已实测结果
 
 - 硬件：AMD Radeon PRO W7900D，`gfx1100`；
 - 后端：OpenSplat 1.1.5 commit
   `9fb62fde8b7b8c416121d3cbdcda278ffd9682f7`，HIP；
-- 已有独立 10k 验证：816,948 个 Gaussian，PSNR `32.153`，SSIM
-  `0.963865`；
-- 该 10k 结果只证明训练与 PLY 导出链路，SSIM 略低于严格目标 `0.965`，
-  LPIPS 和完整自由视角仍待验收，因此不能标记为照片级完成。
+- 输入：同一 DL3DV 场景的 332 个注册视角，其中 331 个用于训练，
+  `frame_00159.png` 作为 held-out；
+- 30k 结果：1,198,821 个 Gaussian，PSNR `33.8325636`、SSIM
+  `0.9718575`、LPIPS-Alex `0.0384274`，指标 gate 通过；
+- visual-safe 清理：只移除 177 个空间离群点；对 79 个大尺度 Gaussian 的
+  候选过滤因引入紫色地面伪影被否决；
+- CutleryLong 任务壳：991,213 个 Gaussian，中央工作区可见违规点为 0；
+  OpenSplat HIP 的 held-out 与低视角渲染通过。
 
-仓库公开清单中的 355 张场景与上述 332 张 AMD 验证场景不是同一个场景。
-复现时必须通过 source manifest、scene object 和 SHA-256 区分，不能把指标互换。
+公开 source archive 含 355 张图；OpenSplat 当前运行使用其中 332 个注册视角。
+这两个计数描述的是不同阶段，不能把 archive 图片数误写成训练视角数。
 
 ## 1. 准备 ROCm 与 OpenSplat
 
@@ -85,7 +89,8 @@ tail -n 30 "$RUN/launcher.log"
 rocm-smi --showuse --showmemuse
 ```
 
-`run-status.json=completed` 只表示训练与 PLY 完整写出。正式房间壳还必须继续做
-held-out PSNR/SSIM/LPIPS、PLY 健康检查、Gaussian-to-MuJoCo 对齐和 H1 三相机
-自由视角验收；在这些完成前，`quality_status` 保持
-`awaiting_metrics_and_visual_review`。
+`run-status.json=completed` 只表示训练与 PLY 完整写出。本次 held-out 指标、
+PLY 健康、保守清理和 OpenSplat 源相机视觉复核均已完成，证据见
+[`gfx1100-20260804-summary.json`](../evidence/gfx1100-20260804-summary.json)。
+BiGym 内 live 3DGS 合成是另一个 gate，目前因 gsplat 探针退出 `139` 仍为
+blocked；不能把 OpenSplat 渲染通过等价为 BiGym 三相机合成通过。
