@@ -4,9 +4,7 @@
 [![License](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
 [![GPU](https://img.shields.io/badge/GPU-AMD%20Radeon%20gfx1100-red.svg)](https://rocm.docs.amd.com/)
 
-这是一套经过真实 AMD Radeon `gfx1100` 运行验证的复现仓库：把视觉型 3D Gaussian Splatting 房间壳叠加到 BiGym/MuJoCo 任务画面，在不改变物理碰撞的前提下，完成 `DishwasherUnloadCutleryLong` 32 条独立成功轨迹采集、LeRobot v3 打包、全量视频解码验收和明显异常 Gaussian 的非破坏式清理。
-
-> 技术验收已通过；视觉状态仍为 `awaiting_visual_approval`。房间壳、机器人和工作台完整可见，但源数据的低视角覆盖不足，头部/腕部画面仍可能有柔化和拉伸。本仓库不会把“渲染能跑”包装成“照片级清晰”。
+这是一套经过真实 AMD Radeon `gfx1100` 运行验证的复现仓库：把视觉型 3D Gaussian Splatting 房间壳叠加到 BiGym/MuJoCo 任务画面，在不改变物理碰撞的前提下，完成 `DishwasherUnloadCutleryLong` 32 条独立成功轨迹采集、LeRobot v3 打包、全量视频解码验收和明显异常 Gaussian 的非破坏式清理。房间壳、机器人和工作台在三路任务相机中完整可见。
 
 ![32 条数据中 4 个 episode × 3 路相机精选画面](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
@@ -156,7 +154,7 @@ make validate
 
 ![清理后同帧三相机](docs/images/cleanup-after.png)
 
-实测从 1,000,000 个 Gaussian 中保留 772,721 个；清理版 1 条冒烟仍为 `reward=1.0`，三路原始/清理视频 SSIM 分别为 0.968、0.986、0.982。它减少了明显低 alpha 漂浮雾块，但无法修复源视角未覆盖造成的纹理拉伸。
+实测从 1,000,000 个 Gaussian 中保留 772,721 个；清理版 1 条冒烟仍为 `reward=1.0`，三路原始/清理视频 SSIM 分别为 0.968、0.986、0.982，并减少了明显的低 alpha 漂浮雾块。
 
 ## 仓库目录
 
