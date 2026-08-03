@@ -1,7 +1,7 @@
 # Data plane
 
-This directory keeps the **data contract** beside the code without illegally
-redistributing gated inputs or derived scene assets.
+This directory keeps the **data contract** beside the code without storing
+large scene assets or upstream-gated inputs in Git.
 
 ## Tracked in Git
 
@@ -15,7 +15,8 @@ redistributing gated inputs or derived scene assets.
 ## Never tracked in Git
 
 - DL3DV images, videos or the source ZIP;
-- complete DL3DV-derived PLYs or checkpoints;
+- complete DL3DV-derived PLYs or checkpoints (the curated PLY shell is released
+  separately on Hugging Face);
 - BiGym official demonstrations and their real UUIDs;
 - the full 32-episode LeRobot package;
 - cloud addresses, SSH configuration or access credentials.
@@ -30,5 +31,17 @@ The exact upstream object is
 Request access from the
 [official dataset page](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P)
 before running the downloader; this repository does not mirror the ZIP.
+
+The curated derived shell is published separately at
+[eustance/amd-bigym-3dgs-kitchen-shell](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell).
+It contains `ply/gaussians_shell.ply`, the three layer PLYs, alignment, camera
+path, public manifests, previews, and `SHA256SUMS`. Access is manually gated;
+the raw DL3DV ZIP is not mirrored there.
+
+```bash
+hf download eustance/amd-bigym-3dgs-kitchen-shell \
+  --repo-type dataset --include 'ply/*' 'metadata/*' 'SHA256SUMS' \
+  --local-dir data/private/amd-bigym-3dgs-kitchen-shell
+```
 
 The default private-data root is `data/private/`, which is ignored by Git.

@@ -21,6 +21,11 @@ The experiment pinned gsplat revision
 runner is retained under `reference/`; `bin/reconstruct.sh` is the portable,
 parameterized entrypoint.
 
+The verified combined and three-layer PLY outputs are available from the
+[gated Hugging Face release](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell).
+Download `ply/*`, `metadata/*`, and `SHA256SUMS`, then verify the files before
+running the downstream alignment or BiGym viewer.
+
 ## 1. License-safe source acquisition
 
 Accept the current DL3DV terms and authenticate locally first. Never paste a
