@@ -46,3 +46,9 @@ jobs:
               archive.extractall('/tmp/gsplat-site')
           PY
           patch --dry-run --forward -d /tmp/gsplat-site -p1 < patches/gsplat-1.4.0-rocm-gfx1100.patch
+
+      - name: Verify OpenSplat HIP patch applies to the pinned revision
+        run: |
+          git clone --filter=blob:none https://github.com/pierotofy/OpenSplat.git /tmp/opensplat
+          git -C /tmp/opensplat checkout --detach 9fb62fde8b7b8c416121d3cbdcda278ffd9682f7
+          git -C /tmp/opensplat apply --check "$GITHUB_WORKSPACE/patches/opensplat-1.1.5-rocm-gfx1100.patch"

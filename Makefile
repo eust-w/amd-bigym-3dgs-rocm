@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON ?= python3
 
-.PHONY: preflight install-bigym build-gsplat smoke-gsplat download-reference-data reconstruct smoke-reconstruction stage-shell collect validate clean verify
+.PHONY: preflight install-bigym build-gsplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm build-opensplat-rocm launch-rocm-30k smoke-reconstruction stage-shell collect validate clean verify
 
 preflight:
 	./scripts/preflight_rocm.sh
@@ -20,6 +20,18 @@ download-reference-data:
 
 reconstruct:
 	./reconstruction/bin/reconstruct.sh
+
+build-opensplat-rocm:
+	./reconstruction/bin/build_opensplat_rocm_gfx1100.sh
+
+reconstruct-rocm:
+	@set -e; \
+	: "$${DATASET_DIR:?set DATASET_DIR}"; \
+	: "$${OUTPUT_DIR:?set OUTPUT_DIR}"; \
+	./reconstruction/bin/reconstruct_rocm_gfx1100.sh "$${DATASET_DIR}" "$${OUTPUT_DIR}"
+
+launch-rocm-30k:
+	./reconstruction/bin/launch_rocm_gfx1100_30k.sh
 
 smoke-reconstruction:
 	@set -e; \

@@ -7,9 +7,10 @@
 [![GPU](https://img.shields.io/badge/runtime-AMD%20ROCm-red.svg)](https://rocm.docs.amd.com/)
 [![3DGS dataset](https://img.shields.io/badge/3DGS%20PLY-Hugging%20Face-yellow.svg)](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)
 
-An end-to-end open-source project for **authorized images → A800 3DGS
-reconstruction → three-layer room shell → AMD ROCm rendering → BiGym/MuJoCo
-LeRobot collection**.
+An end-to-end open-source project for **authorized images → AMD gfx1100/HIP
+3DGS reconstruction → three-layer room shell → AMD ROCm rendering →
+BiGym/MuJoCo LeRobot collection**. The historical A800 result remains as a
+reference manifest; the AMD-native branch does not depend on an NVIDIA GPU.
 
 The repository contains the real reconstruction, export, alignment, ROCm
 adaptation, compositing, replay filtering, collection, validation, and Gaussian
@@ -23,6 +24,8 @@ license-aware acquisition tools.
 > are complete. The shell, robot, and workbench are visible. A known limitation
 > remains: fixed H1 head and wrist cameras extend beyond parts of the source
 > capture trajectory, so a few low views can still appear soft or stretched.
+> AMD-native 30k reconstruction is a separate acceptance gate; a running job or
+> a valid PLY is not treated as final visual-quality approval.
 
 ![Four selected episodes across three cameras](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
@@ -33,6 +36,7 @@ license-aware acquisition tools.
 | Source | DL3DV-ALL-960P, 355 `960×540` images, pinned revision and archive hash |
 | A800 reconstruction | gsplat MCMC, 30k steps, 1,000,000 Gaussians |
 | Held-out metrics | PSNR `35.1623` / SSIM `0.9589` / LPIPS `0.1307` |
+| AMD-native training proof | OpenSplat HIP on `gfx1100`; separate 332-image kitchen, 10k, PSNR `32.153`, SSIM `0.963865` |
 | AMD runtime | Radeon `gfx1100`, ROCm/HIP, native gsplat gate passed |
 | BiGym task | `DishwasherUnloadCutleryLong` |
 | Formal data | `32/32` episodes, `32/32` unique UUIDs, all `reward=1.0` |
@@ -69,7 +73,7 @@ current DL3DV terms, and independent access approval for the upstream source.
 ```mermaid
 flowchart LR
   A[Authorized DL3DV ZIP] --> B[Safe extraction + known-pose COLMAP]
-  B --> C[default + MCMC 30k]
+  B --> C[OpenSplat HIP 30k on gfx1100]
   C --> D{PSNR / SSIM / LPIPS gate}
   D --> E[Graphdeco SH3 PLY]
   E --> F[Sim3 + wall/floor/ceiling shell]
@@ -128,7 +132,34 @@ make download-reference-data
 The gate checks revision, byte count, SHA-256, ZIP CRC, image count, and camera
 poses. Private data is written under the Git-ignored `data/private/` tree.
 
-### 2. Reconstruct the room shell on A800
+### 2. Reconstruct natively on AMD gfx1100
+
+Prepare the pinned OpenSplat checkout and a TheRock/ROCm Python environment,
+then build the real HIP backend:
+
+```bash
+git clone https://github.com/pierotofy/OpenSplat.git /root/OpenSplat
+git -C /root/OpenSplat checkout 9fb62fde8b7b8c416121d3cbdcda278ffd9682f7
+
+export ROCM_VENV=/root/opensplat-env
+make build-opensplat-rocm
+
+export DATASET_DIR=/workspace/persistent/rocm3dgs-inputs/dl3dv-kitchen
+export RUN_ROOT=/workspace/persistent/rocm3dgs-results
+export RUN_ID=kitchen-gfx1100-30k
+make launch-rocm-30k
+```
+
+The runner rejects non-`gfx1100` hardware, incomplete COLMAP input, a wrong
+OpenSplat revision, and reused output directories. It records the GPU, HIP
+version, step count, process state, and final PLY SHA-256. Completion does not
+bypass held-out metrics, PLY health, coordinate alignment, or visual review.
+See the [AMD-native reconstruction guide](docs/05-amd-native-reconstruction.md).
+
+### 2b. Historical A800 reference path
+
+The previous A800/gsplat path is retained to reproduce the published reference
+manifest and compare backends:
 
 ```bash
 git clone https://github.com/nerfstudio-project/gsplat.git /workspace/gsplat
@@ -157,7 +188,7 @@ The entrypoint performs:
 
 See the [reconstruction guide](reconstruction/README.md).
 
-### 3. Run the shell on AMD Radeon
+### 3. Run the shell in BiGym on AMD Radeon
 
 Start from an AMD-supported ROCm/PyTorch environment:
 
@@ -219,7 +250,7 @@ upstream inputs independently. See the [data plane](data/README.md) and
 ├── data/
 │   ├── manifests/         # source, reconstruction, and Cutlery32 contracts
 │   └── samples/           # synthetic smoke documentation
-├── patches/               # BiGym shell and gsplat ROCm patches
+├── patches/               # BiGym, gsplat ROCm, and OpenSplat HIP patches
 ├── scripts/               # AMD runtime, collection, validation, cleanup, release
 ├── configs/               # measured Sim(3), visual profile, replay schema
 ├── evidence/              # sanitized machine-readable evidence
@@ -253,6 +284,7 @@ view coverage.
 - [End-to-end architecture](docs/architecture/end-to-end.md)
 - [Coordinates and physics isolation](docs/01-end-to-end.md)
 - [ROCm / gsplat adaptation](docs/02-rocm-gsplat.md)
+- [AMD gfx1100 native reconstruction](docs/05-amd-native-reconstruction.md)
 - [32-episode collection and replay reliability](docs/03-collection.md)
 - [Integrity validation and Gaussian cleanup](docs/04-validation-and-cleaning.md)
 - [Data and licensing boundary](docs/data-license.md)

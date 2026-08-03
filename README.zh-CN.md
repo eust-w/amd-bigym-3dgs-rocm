@@ -7,8 +7,9 @@
 [![GPU](https://img.shields.io/badge/runtime-AMD%20ROCm-red.svg)](https://rocm.docs.amd.com/)
 [![3DGS 数据](https://img.shields.io/badge/3DGS%20PLY-Hugging%20Face-yellow.svg)](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)
 
-一套从**受许可图片 → A800 3DGS 重建 → 三层房间壳 → AMD ROCm 渲染 →
-BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工程。
+一套从**受许可图片 → AMD gfx1100/HIP 原生 3DGS 重建 → 三层房间壳 →
+AMD ROCm 渲染 → BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工程。
+历史 A800 结果继续作为对照清单保留，但 AMD 分支不依赖 NVIDIA GPU。
 
 仓库包含真实跑过的重建、导出、坐标对齐、ROCm 适配、视觉合成、回放筛选、
 采集、验收和 Gaussian 清理代码；精选派生 PLY 房间壳已作为独立的 Hugging Face
@@ -18,6 +19,8 @@ BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工程。
 > 当前结论：技术链路与精选三相机画面复核均已完成。房间壳、机器人和工作台
 > 完整可见；已知限制是固定 H1 头部/腕部相机超出部分源拍摄轨迹，少数低视角
 > 仍可能柔化或拉伸。
+> AMD 原生 30k 重建是独立验收门：进程在运行或 PLY 能打开，都不等于最终
+> 视觉质量已经通过。
 
 ![32 条数据中 4 个 episode × 3 路相机精选画面](docs/images/formal32-four-episode-three-camera-contact-sheet.png)
 
@@ -28,6 +31,7 @@ BiGym/MuJoCo 32 条 LeRobot 数据采集**的完整开源工程。
 | 源数据 | DL3DV-ALL-960P，355 张 `960×540` 图片，固定 revision 与 archive SHA |
 | A800 重建 | gsplat MCMC，30k steps，1,000,000 Gaussians |
 | held-out | PSNR `35.1623` / SSIM `0.9589` / LPIPS `0.1307` |
+| AMD 原生训练实跑 | OpenSplat HIP / `gfx1100`；独立 332 图厨房，10k，PSNR `32.153`，SSIM `0.963865` |
 | AMD 运行 | Radeon `gfx1100`，ROCm/HIP，gsplat native gate 通过 |
 | BiGym 任务 | `DishwasherUnloadCutleryLong` |
 | 正式数据 | `32/32` episode、`32/32` 唯一 UUID、全部 `reward=1.0` |
@@ -64,7 +68,7 @@ shasum -a 256 -c SHA256SUMS
 ```mermaid
 flowchart LR
   A[授权 DL3DV ZIP] --> B[安全解压与已知位姿 COLMAP]
-  B --> C[default + MCMC 30k]
+  B --> C[gfx1100 上 OpenSplat HIP 30k]
   C --> D{PSNR / SSIM / LPIPS gate}
   D --> E[Graphdeco SH3 PLY]
   E --> F[Sim3 + 墙/地/顶三层壳]
@@ -120,7 +124,31 @@ make download-reference-data
 脚本不接受命令行 token，会核验 revision、字节数、SHA-256、ZIP CRC、图片数和
 相机位姿。数据默认进入 Git 忽略的 `data/private/`。
 
-### 2. 在 A800 重建三层壳
+### 2. 在 AMD gfx1100 原生重建
+
+准备固定 revision 的 OpenSplat 与 TheRock/ROCm Python 环境：
+
+```bash
+git clone https://github.com/pierotofy/OpenSplat.git /root/OpenSplat
+git -C /root/OpenSplat checkout 9fb62fde8b7b8c416121d3cbdcda278ffd9682f7
+
+export ROCM_VENV=/root/opensplat-env
+make build-opensplat-rocm
+
+export DATASET_DIR=/workspace/persistent/rocm3dgs-inputs/dl3dv-kitchen
+export RUN_ROOT=/workspace/persistent/rocm3dgs-results
+export RUN_ID=kitchen-gfx1100-30k
+make launch-rocm-30k
+```
+
+脚本会拒绝非 `gfx1100` 硬件、不完整 COLMAP 输入、错误的 OpenSplat revision
+以及已存在的输出目录，并记录 GPU、HIP、steps、进程状态和最终 PLY SHA-256。
+训练完成后仍必须进行 held-out 指标、PLY 健康、坐标对齐和人工视觉验收。
+详见 [AMD 原生重建指南](docs/05-amd-native-reconstruction.md)。
+
+### 2b. 历史 A800 对照入口
+
+原 A800/gsplat 路径继续保留，用于复现公开 reference manifest 和后端对照：
 
 ```bash
 git clone https://github.com/nerfstudio-project/gsplat.git /workspace/gsplat
@@ -149,7 +177,7 @@ make reconstruct
 
 详见 [reconstruction guide](reconstruction/README.md)。
 
-### 3. 在 AMD Radeon 上运行
+### 3. 在 AMD Radeon 的 BiGym 中运行房间壳
 
 从 AMD 官方兼容的 ROCm/PyTorch 环境开始：
 
@@ -200,7 +228,7 @@ make validate
 
 ```text
 .
-├── reconstruction/        # 下载、COLMAP、训练选择、PLY/三层壳导出、A800 实验入口
+├── reconstruction/        # 下载、COLMAP、AMD/A800 训练、PLY/三层壳导出
 │   ├── bin/               # 可移植的下载与重建命令
 │   ├── src/               # 已实测 Python 实现
 │   ├── config/            # 版本与质量阈值
@@ -208,7 +236,7 @@ make validate
 ├── data/
 │   ├── manifests/         # 源数据、A800 重建、Cutlery32 数据契约
 │   └── samples/           # 合成 smoke 说明，不含受限 PLY
-├── patches/               # BiGym 视觉壳与 gsplat ROCm 精确补丁
+├── patches/               # BiGym、gsplat ROCm 与 OpenSplat HIP 精确补丁
 ├── scripts/               # AMD 环境、采集、验证、清理和发布检查
 ├── configs/               # 实测 Sim(3)、视觉 profile、replay schema
 ├── evidence/              # 脱敏机器证据
@@ -241,6 +269,7 @@ python scripts/clean_gaussian_ply.py \
 - [端到端架构](docs/architecture/end-to-end.md)
 - [坐标系与物理隔离](docs/01-end-to-end.md)
 - [ROCm / gsplat 适配](docs/02-rocm-gsplat.md)
+- [AMD gfx1100 原生重建](docs/05-amd-native-reconstruction.md)
 - [32 条采集与回放失败治理](docs/03-collection.md)
 - [完整性验收与异常点清理](docs/04-validation-and-cleaning.md)
 - [数据与许可边界](docs/data-license.md)

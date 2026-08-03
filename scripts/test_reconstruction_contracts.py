@@ -12,6 +12,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SELECTOR = ROOT / "reconstruction/src/select_training_candidate.py"
+ROCM_RUNNER = ROOT / "reconstruction/bin/reconstruct_rocm_gfx1100.sh"
+ROCM_BUILDER = ROOT / "reconstruction/bin/build_opensplat_rocm_gfx1100.sh"
+ROCM_LAUNCHER = ROOT / "reconstruction/bin/launch_rocm_gfx1100_30k.sh"
+ROCM_PATCH = ROOT / "patches/opensplat-1.1.5-rocm-gfx1100.patch"
 
 
 def candidate(root: Path, name: str, metrics: dict[str, float]) -> None:
@@ -68,6 +72,19 @@ def main() -> None:
         assert result.returncode == 2
         assert payload["status"] == "quality_target_not_met"
         assert payload["formal_export_allowed"] is False
+
+    runner = ROCM_RUNNER.read_text(encoding="utf-8")
+    builder = ROCM_BUILDER.read_text(encoding="utf-8")
+    launcher = ROCM_LAUNCHER.read_text(encoding="utf-8")
+    patch = ROCM_PATCH.read_text(encoding="utf-8")
+    assert "ROCM_ARCH:-gfx1100" in runner
+    assert "TRAIN_STEPS:-${STEPS:-30000}" in runner
+    assert '"quality_status": "awaiting_metrics_and_visual_review"' in runner
+    assert "nvidia-smi" not in runner + builder + launcher
+    assert "9fb62fde8b7b8c416121d3cbdcda278ffd9682f7" in builder
+    assert "CMAKE_HIP_ARCHITECTURES=\"$ROCM_ARCH\"" in builder
+    assert "TRAIN_STEPS=\"${TRAIN_STEPS:-30000}\"" in launcher
+    assert "ROCM_HOME" in patch and "GPU_INCLUDE_DIRS" in patch
 
     print("RECONSTRUCTION_CONTRACT_TESTS_OK")
 
