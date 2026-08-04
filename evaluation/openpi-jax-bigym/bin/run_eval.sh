@@ -23,6 +23,7 @@ export MUJOCO_GL=${MUJOCO_GL:-egl}
 export PYOPENGL_PLATFORM=${PYOPENGL_PLATFORM:-egl}
 export PYTHONPATH="$BIGYM_DIR${PYTHONPATH:+:$PYTHONPATH}"
 export TORCH_EXTENSIONS_DIR=${TORCH_EXTENSIONS_DIR:-$AMD_EVAL_ROOT/cache/torch-extensions-gsplat}
+export GSPLAT_PREBUILT_DIR=${GSPLAT_PREBUILT_DIR:-}
 
 "$BIGYM_PYTHON" "$EVAL_DIR/src/eval_bigym_3dgs.py" \
   --bigym-root "$BIGYM_DIR" \

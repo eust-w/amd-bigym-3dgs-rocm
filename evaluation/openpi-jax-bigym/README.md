@@ -33,6 +33,12 @@ strict smoke memory gate before the formal benchmark. The default JAX pool is
 75%; the visual renderer uses the remaining memory. A single process must never
 import both ROCm stacks.
 
+When reusing an already-built HIP gsplat binary, set
+`GSPLAT_PREBUILT_DIR=/absolute/path/to/gsplat_cuda`. The evaluator imports the
+binary directly, verifies `CameraModelType`, records its SHA-256, and avoids a
+spurious CUDA-toolkit JIT rebuild. Fresh hosts should run
+`bootstrap_bigym_runtime.sh`, which builds the pinned gsplat 1.4.0 patch.
+
 ## Run
 
 Use a persistent AMD workspace. Large model and shell artifacts are downloaded

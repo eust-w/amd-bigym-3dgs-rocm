@@ -25,6 +25,14 @@ def payload_bytes(root: Path) -> int:
     )
 
 
+def payload_files(root: Path) -> int:
+    return sum(
+        1
+        for path in root.rglob("*")
+        if path.is_file() and ".cache" not in path.parts
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--lock", type=Path, required=True)
@@ -50,6 +58,12 @@ def main() -> None:
     if actual_bytes != expected_bytes:
         raise SystemExit(
             f"checkpoint byte mismatch: expected {expected_bytes}, got {actual_bytes}"
+        )
+    actual_files = payload_files(checkpoint)
+    expected_files = int(lock["checkpoint"]["files"])
+    if actual_files != expected_files:
+        raise SystemExit(
+            f"checkpoint file-count mismatch: expected {expected_files}, got {actual_files}"
         )
 
     checks = {
@@ -82,6 +96,7 @@ def main() -> None:
             {
                 "status": "artifacts_verified",
                 "checkpoint_bytes": actual_bytes,
+                "checkpoint_files": actual_files,
                 "shell_profile": str(shell / "scene-shell-profile.json"),
             },
             indent=2,

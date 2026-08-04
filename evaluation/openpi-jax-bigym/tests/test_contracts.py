@@ -24,6 +24,35 @@ class ContractTests(unittest.TestCase):
         cls.lock = json.loads((ROOT / "VERSION_LOCK.json").read_text())
         cls.probe = load_module("probe_policy", ROOT / "src" / "probe_policy.py")
         cls.summary = load_module("summarize_results", ROOT / "src" / "summarize_results.py")
+        cls.calibration = load_module(
+            "calibrate_amd_shell", ROOT / "src" / "calibrate_amd_shell.py"
+        )
+
+    def test_opensplat_camera_conversion(self) -> None:
+        import tempfile
+
+        if not hasattr(self.calibration.np, "asarray"):
+            self.skipTest("NumPy runtime is installed only in the AMD evaluation venv")
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "cameras.json"
+            source.write_text(
+                json.dumps(
+                    [
+                        {
+                            "rotation": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                            "position": [1, 2, 3],
+                            "height": 1080,
+                            "fy": 837.0,
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            cameras, payload = self.calibration.load_opensplat_cameras(source)
+            self.assertEqual(cameras.shape, (1, 4, 4))
+            self.assertEqual(cameras[0, :3, 3].tolist(), [1.0, 2.0, 3.0])
+            self.assertEqual(payload["frames"], 1)
+            self.assertGreater(payload["fovy_degrees_median"], 1.0)
 
     def test_pinned_policy_contract(self) -> None:
         contract = self.lock["policy_contract"]
@@ -85,6 +114,18 @@ class ContractTests(unittest.TestCase):
         self.assertIn("torch.version.hip is not None", bootstrap)
         self.assertIn('exec "$POLICY_PYTHON"', server)
         self.assertNotIn("conda run", server)
+
+    def test_amd_adapter_avoids_opencv_and_threaded_flask(self) -> None:
+        adapter = (ROOT / "src" / "inference_server_bigym_amd.py").read_text()
+        self.assertNotIn("import cv2", adapter)
+        self.assertIn("threaded=False", adapter)
+        self.assertIn("Image.open", adapter)
+
+    def test_evaluator_can_reuse_verified_prebuilt_hip_gsplat(self) -> None:
+        evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()
+        self.assertIn("GSPLAT_PREBUILT_DIR", evaluator)
+        self.assertIn("_import_module_from_library", evaluator)
+        self.assertIn("CameraModelType", evaluator)
 
 
 if __name__ == "__main__":

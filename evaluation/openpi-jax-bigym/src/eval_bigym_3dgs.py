@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
 import sys
 import time
+import types
 from typing import Any
 
 import cv2
@@ -21,6 +23,32 @@ CAMERA_KEYS = (
     ("left_wrist", "rgb_left_wrist"),
     ("right_wrist", "rgb_right_wrist"),
 )
+
+
+def install_prebuilt_gsplat_backend() -> dict[str, str] | None:
+    """Load an existing HIP extension without triggering a CUDA JIT rebuild."""
+
+    build_dir_value = os.environ.get("GSPLAT_PREBUILT_DIR")
+    if not build_dir_value:
+        return None
+    build_dir = Path(build_dir_value).resolve()
+    shared_object = build_dir / "gsplat_cuda.so"
+    if not shared_object.is_file():
+        raise RuntimeError(f"prebuilt gsplat extension is missing: {shared_object}")
+
+    from torch.utils.cpp_extension import _import_module_from_library
+
+    native = _import_module_from_library("gsplat_cuda", str(build_dir), True)
+    if not hasattr(native, "CameraModelType"):
+        raise RuntimeError("prebuilt gsplat extension lacks CameraModelType")
+    backend = types.ModuleType("gsplat.cuda._backend")
+    backend._C = native  # type: ignore[attr-defined]
+    backend.__all__ = ["_C"]
+    sys.modules[backend.__name__] = backend
+    digest = hashlib.sha256(shared_object.read_bytes()).hexdigest()
+    receipt = {"path": str(shared_object), "sha256": digest}
+    print(f"GSPLAT_PREBUILT_LOADED {json.dumps(receipt, sort_keys=True)}")
+    return receipt
 
 
 def chw_rgb(observation: dict[str, Any], key: str) -> np.ndarray:
@@ -121,6 +149,7 @@ def main() -> None:
     parser.add_argument("--tag", default="amd-jax")
     args = parser.parse_args()
 
+    gsplat_backend = install_prebuilt_gsplat_backend()
     bigym_root = args.bigym_root.resolve()
     replay_dir = bigym_root / "d" / "replay_generation"
     eval_dir = bigym_root / "d" / "eval"
@@ -333,6 +362,7 @@ def main() -> None:
                 "right_wrist": [3, 480, 640],
             },
         },
+        "gsplat_backend": gsplat_backend,
         "episodes": episodes,
     }
     results_path = task_dir / "results.json"

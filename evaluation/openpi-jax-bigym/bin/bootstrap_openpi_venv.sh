@@ -37,7 +37,7 @@ if test ! -f "$RECEIPT"; then
   "${PIP[@]}" install \
     av==15.1.0 datasets==4.8.5 pyarrow==25.0.0 pandas==2.3.3 \
     draccus==0.10.0 gymnasium==1.3.0 jsonlines==4.0.0 \
-    opencv-python==4.11.0.86 opencv-python-headless==4.11.0.86
+    flask==3.1.2 pillow==11.3.0
   "${PIP[@]}" install --index-url https://pypi.org/simple torchcodec==0.5
   "${PIP[@]}" install --no-deps lerobot==0.6.0
   "${PIP[@]}" install -e "$OPENPI_DIR" --no-deps
@@ -61,7 +61,16 @@ devices = jax.devices()
 print("jax", jax.__version__)
 print("devices", devices)
 print("torch", torch.__version__)
-if not devices or "rocm" not in type(devices[0]).__name__.lower():
+platforms = {
+    str(getattr(device, "platform", "")).lower()
+    for device in devices
+}
+client_platforms = {
+    str(getattr(getattr(device, "client", None), "platform", "")).lower()
+    for device in devices
+}
+print("platforms", sorted(platforms | client_platforms))
+if not devices or not ({"rocm", "gpu"} & (platforms | client_platforms)):
     raise SystemExit("AMD JAX ROCm device was not detected")
 if torch.version.hip is not None:
     raise SystemExit("The OpenPI process must use CPU torch to avoid two ROCm stacks")
