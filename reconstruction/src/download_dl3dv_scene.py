@@ -21,24 +21,17 @@ from pathlib import Path, PurePosixPath
 
 from PIL import Image, ImageDraw, ImageOps
 
-REPO_ID = "DL3DV/DL3DV-ALL-960P"
-REVISION = "abb4dab0d4b6d93c32e6d901c06c35bad03210fb"
+REPO_ID = "DL3DV/DL3DV-ALL-2K"
+REVISION = "e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c"
 SOURCE_URL = f"https://huggingface.co/datasets/{REPO_ID}"
 LICENSE = "CC BY-NC 4.0 plus DL3DV dataset terms; non-commercial research only"
 SCENES = {
-    "art-gallery": {
-        "scene_hash": "7b9cceed9f8b02a6991b18ae108d77f45f559b70b298d19df07bd4fda7236e28",
-        "filename": "2K/7b9cceed9f8b02a6991b18ae108d77f45f559b70b298d19df07bd4fda7236e28.zip",
-        "category": "Art-Galleries",
-        "expected_bytes": 198_146_880,
-        "expected_sha256": "5c32b54b2eba7c2f4f02ee463f1bf610a23243d587545f54e24a2f41da582cdb",
-    },
-    "residential-kitchen": {
-        "scene_hash": "2d8e63fb8b9b0751382fd178f8ad49dd3863e625270b315402e82df0310efa97",
-        "filename": "3K/2d8e63fb8b9b0751382fd178f8ad49dd3863e625270b315402e82df0310efa97.zip",
-        "category": "Residential-area / kitchen",
-        "expected_bytes": 207_036_820,
-        "expected_sha256": "cf8ebd56a5f25b4ae8617d7a30e0a3c0934952f6af48d29d603fd88ecc86000c",
+    "commercial-kitchen": {
+        "scene_hash": "90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947",
+        "filename": "4K/90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947.zip",
+        "category": "indoor commercial kitchen with an approximately open central aisle",
+        "expected_bytes": 910_995_448,
+        "expected_sha256": "9765ce6dd3661ba125b6689c0cc50717645480ec2ce5790a4636129521341adb",
     },
 }
 
@@ -53,7 +46,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--scene",
-        default="art-gallery",
+        default="commercial-kitchen",
         help=(
             "Pinned DL3DV scene profile. Use --scene-hash/--batch for a "
             "screened candidate that is not yet promoted into SCENES."

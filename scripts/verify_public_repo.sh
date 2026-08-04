@@ -45,13 +45,19 @@ import json
 from pathlib import Path
 
 source = json.loads(Path("data/manifests/dl3dv-kitchen-source.public.json").read_text())
-assert source["source"]["archive_bytes"] == 220332698
-assert source["source"]["archive_sha256"] == "4a6f3eac1ff4d2545b655fdfe5c6edd7e08f92e847584fabf933a09e592be563"
+assert source["source"]["archive_bytes"] == 910995448
+assert source["source"]["archive_sha256"] == "9765ce6dd3661ba125b6689c0cc50717645480ec2ce5790a4636129521341adb"
+assert source["source"]["scene_hash"] == "90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947"
 assert source["redistribution"]["source_archive_in_repo"] is False
 reconstruction = json.loads(Path("data/manifests/a800-reconstruction.public.json").read_text())
-assert reconstruction["method"]["strategy"] == "mcmc"
-assert reconstruction["method"]["steps"] == 30000
+assert reconstruction["method"]["strategy"] == "mcmc scheduled-r20"
+assert reconstruction["method"]["steps"] == 60000
 assert len(reconstruction["shell_assets"]) == 4
+dataset = json.loads(Path("data/manifests/cutlery32-dataset.public.json").read_text())
+assert dataset["dataset_id"] == "bigym-3dgs-light-floor-replay-plan-v2-20260802"
+assert dataset["summary"]["episodes"] == 32
+assert dataset["summary"]["video_files"] == 3
+assert dataset["status"] == "technical_pass_visual_approval_pending"
 print("DATA_CONTRACT_OK")
 PY
 

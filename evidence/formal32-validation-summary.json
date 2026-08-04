@@ -1,45 +1,50 @@
 {
-  "schema_version": 1,
-  "recorded_at": "2026-08-03",
+  "schema_version": 2,
+  "recorded_at": "2026-08-02",
+  "dataset_id": "bigym-3dgs-light-floor-replay-plan-v2-20260802",
   "hardware": {
-    "vendor": "AMD",
-    "architecture": "gfx1100"
+    "vendor": "NVIDIA",
+    "device": "A800-SXM4-80GB",
+    "runtime": "CUDA 12.8"
   },
   "runtime": {
-    "python": "3.12",
-    "torch": "2.9.1+gitff65f5b",
-    "hip": "7.2.53211-e1a6bc5663",
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
     "mujoco": "3.10.0",
     "bigym": "4.1.0",
     "lerobot": "0.6.0",
     "gsplat": "1.4.0"
   },
   "task": "DishwasherUnloadCutleryLong",
-  "status": "technical_and_visual_review_completed",
+  "status": "technical_pass_visual_approval_pending",
   "summary": {
     "episodes": 32,
+    "episode_index_min": 0,
+    "episode_index_max": 31,
     "unique_demo_uuids": 32,
     "saved_reward_1": 32,
     "total_frames": 21018,
+    "fps": 20,
     "state_shape": [21018, 16],
     "action_shape": [21018, 16],
-    "video_files": 96,
-    "decoded_video_files": 96,
-    "gaussian_rendered_frames": 63150,
+    "video_files": 3,
+    "decoded_video_files": 3,
+    "camera_streams": ["cam_high", "cam_left_wrist", "cam_right_wrist"],
     "background_body_count": 0,
     "background_geom_count": 0,
     "background_collision_count": 0
   },
   "checks": {
-    "all_rewards_equal_one": true,
+    "all_saved_rewards_equal_one": true,
     "all_uuids_unique": true,
-    "all_videos_probe_and_decode": true,
-    "action_state_finite": true,
+    "all_videos_probe_and_full_decode": true,
+    "all_video_frame_counts_equal_21018": true,
+    "action_state_finite_float32": true,
     "strict_3dgs_renderer": true,
-    "gaussian_render_count_exact": true
+    "fallback_allowed": false
   },
   "visual_status": {
-    "status": "review_completed",
-    "summary": "The room shell, robot, workbench, and three camera streams are visible in the curated contact sheet; rendering and data-integrity gates passed."
+    "status": "awaiting_visual_approval",
+    "summary": "Structural, reward and full-decode checks passed. Human acceptance of decoded frames from every camera has not yet been recorded."
   }
 }

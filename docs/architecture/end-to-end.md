@@ -25,7 +25,7 @@ flowchart TB
   subgraph Collection[Dataset plane]
     C1[20 Hz reward precheck]
     C2[32 unique replay UUIDs]
-    C3[LeRobot v3 + 96 videos]
+    C3[LeRobot v3 + 3 merged videos]
     C4[Hash, decode and visual acceptance]
   end
 

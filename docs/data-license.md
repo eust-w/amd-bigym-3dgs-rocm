@@ -1,35 +1,24 @@
 # 数据与许可边界
 
-## 本仓库包含什么
+本仓库的 Apache-2.0 只覆盖项目自身代码，不会扩大上游数据和派生资产的许可。
 
-- Apache-2.0 的授权下载门禁、COLMAP 准备、A800 重建、三层壳导出、
-  编排、验证和清理脚本；
-- 对 BiGym / gsplat 的源码补丁；
-- `data/manifests/` 中不含原图和真实 UUID 的数据契约；
-- CI 运行时生成的 Apache-2.0 合成 Gaussian 房间；
-- 不含 demo UUID 的 replay plan schema；
-- 脱敏的机器统计与小尺寸人工验收联系表；联系表是经过 3DGS 重建、
-  MuJoCo 合成、缩放和标注的研究结果，单独按 CC BY-NC 4.0 与 DL3DV
-  Terms of Use 标注，见 `docs/images/README.md`；
-- 对齐矩阵和视觉壳 profile 元数据。
+唯一标准房间壳来源是 `DL3DV/DL3DV-ALL-2K` 的商业厨房场景：
 
-## 本仓库不包含什么
+- scene hash：`90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947`；
+- revision：`e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`；
+- object：`4K/90e70328...zip`；
+- archive SHA-256：`9765ce6dd3661ba125b6689c0cc50717645480ec2ce5790a4636129521341adb`。
 
-- DL3DV 原始图片或视频；
-- DL3DV 派生的完整 PLY；
-- BiGym official demonstrations 或其真实 UUID 列表；
-- LeRobot 32 条完整训练包；
-- SSH 地址、端口、密钥、云实例或私有对象存储地址。
+DL3DV 当前许可用于非商业研究与教育，并对数据共享设置了额外条款。每位使用者
+都应从[官方数据页](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-2K)
+独立申请访问并接受最新条款。因此完整派生 PLY 和带有 DL3DV 画面的 LeRobot
+数据只放在人工审批的 Hugging Face 仓库，不提交到 Git。
 
-因此 public repo 能完整复现处理逻辑，但需要使用者自行取得合法输入；
-`make smoke-reconstruction` 只使用合成数据验证代码结构。
+唯一标准采集数据为
+`bigym-3dgs-light-floor-replay-plan-v2-20260802/dishwasher_unload_cutlery_long`。
+其中包含 BiGym demonstration 的回放结果，使用者还需遵守 BiGym 与
+demonstration 各自的上游许可。
 
-## DL3DV
-
-本次房间壳来源记录为 DL3DV-10K scene hash `951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86`、revision `abb4dab0d4b6d93c32e6d901c06c35bad03210fb`。使用者需要在 [DL3DV-10K 官方仓库](https://github.com/DL3DV-10K/Dataset) 申请访问、阅读并接受最新 Terms of Use 和 license。
-
-本次历史记录把该来源标记为非商业研究用途。官方条款还限制原始 Dataset 的转交：接收者需要自行同意条款。许可可能更新，使用者应以下载时的官方条款为准。不要把本仓库的 Apache-2.0 误读为对数据、派生 PLY 或 `docs/images/` 的授权。
-
-## BiGym demonstrations
-
-官方仓库明确提示并非所有 demonstration 都能成功完成任务。请按其分发渠道和许可取得数据；本仓库只提供本地验证与筛选逻辑，不再分发轨迹或真实 UUID。
+本仓库包含的 manifest、对齐参数和代码不能被解释为对 DL3DV 原始数据、派生
+PLY、预览或采集帧授予商业使用权。许可可能更新，实际使用应以下载时的官方条款
+为准。

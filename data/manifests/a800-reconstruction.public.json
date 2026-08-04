@@ -1,55 +1,39 @@
 {
-  "schema_version": 1,
-  "run_id": "amdcompetition-a800-dl3dv-shell-h5w87",
-  "status": "technical_and_curated_visual_review_completed",
+  "schema_version": 2,
+  "run_id": "dl3dv-highres-kitchen-bigym-20260802",
+  "status": "technical_pass_visual_approval_pending",
+  "canonical": true,
   "hardware": "NVIDIA A800",
   "method": {
     "trainer": "gsplat simple_trainer",
-    "strategy": "mcmc",
-    "steps": 30000,
-    "sh_degree": 3,
-    "antialiased": true,
-    "gaussians_before_layering": 1000000,
-    "gsplat_revision": "4d3a3b69db4de0326f983ccf7b7b255271a17b01"
-  },
-  "held_out_metrics": {
-    "psnr": 35.16229248046875,
-    "ssim": 0.9589212536811829,
-    "lpips": 0.13073210418224335
+    "strategy": "mcmc scheduled-r20",
+    "steps": 60000,
+    "seed": 42,
+    "gaussian_cap": 2000000,
+    "cleaned_input_sha256": "26e20cf6af624d26d6ead785fb485788b57d59342921010c8ab571465739b8d8"
   },
   "shell_assets": [
-    {
-      "path": "walls_fixed_kitchen.ply",
-      "bytes": 242564991,
-      "sha256": "6fa0d703e3146e1c79adee807772cb6389a3d44b3df0a90fc9006c4dec4e4f22"
-    },
-    {
-      "path": "floor_perimeter.ply",
-      "bytes": 2596714,
-      "sha256": "f5f654e9657fe19828f2e227696f16b1da16ecb159b7544e31d11a002110c824"
-    },
-    {
-      "path": "ceiling_lights.ply",
-      "bytes": 2843225,
-      "sha256": "298299a6ba443fa75c3778ed6a46e1df2170406c18235bf495023f70b256b0eb"
-    },
-    {
-      "path": "gaussians_shell.ply",
-      "bytes": 248001644,
-      "sha256": "2889d80044ebab5c8d7c89e2b49415b0ebf4232493e850085c15d1f3cf7fdc57"
-    }
+    {"path": "walls_fixed_kitchen.ply", "gaussians": 829561, "bytes": 205732794, "sha256": "779b0aa6c079608866c3aa6debd4945b5863c62331ece67feecf384dbfe114a1"},
+    {"path": "floor_perimeter.ply", "gaussians": 16099, "bytes": 3994213, "sha256": "d5bf00a29aa2b3f96d8f6ba396f9468fcec4f696e8f5725c3c55c3f4bc947e52"},
+    {"path": "ceiling_lights.ply", "gaussians": 16444, "bytes": 4079772, "sha256": "5d504401a1fd2954b2d0990fd7e2305194213f15d662def34b7c487aa72cd46a"},
+    {"path": "gaussians_shell.ply", "gaussians": 862104, "bytes": 213803454, "sha256": "086f1f5757523db94349de16707806e74a65bac35b24d9e4e7437639164738a7"}
   ],
+  "alignment": {"bytes": 5505, "sha256": "2c073e049ecc48e36bb731b202320a55d609dcbc74ddda2afee1e53b361086ad"},
+  "render_contract": {
+    "cameras": ["head", "left_wrist", "right_wrist"],
+    "ground_mode": "metric_procedural",
+    "ground_base_rgb": [210, 210, 204],
+    "ground_grout_rgb": [175, 180, 180],
+    "strict_renderer": true,
+    "fallback_allowed": false,
+    "background_physics": {"body_count": 0, "geom_count": 0, "collision_count": 0}
+  },
   "distribution": {
-    "ply_files_in_repo": false,
-    "checkpoint_in_repo": false,
-    "manifest_and_reproduction_code_in_repo": true,
-    "derived_ply_release": {
-      "repo_id": "eustance/amd-bigym-3dgs-kitchen-shell",
-      "url": "https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell",
-      "gated": "manual",
-      "license": "cc-by-nc-4.0",
-      "subject_to_current_dl3dv_terms": true,
-      "remote_sha256_verified": true
-    }
-  }
+    "repo_id": "eustance/amd-bigym-3dgs-kitchen-shell",
+    "url": "https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell",
+    "gated": "manual",
+    "license": "cc-by-nc-4.0",
+    "subject_to_current_dl3dv_terms": true
+  },
+  "profile_note": "PLY and alignment bytes match the collection receipt. The published profile was regenerated from the preserved calibrated profile with the same light-floor settings; it is not byte-identical to the lost ephemeral runtime profile."
 }

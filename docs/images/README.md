@@ -1,19 +1,13 @@
-# Image provenance and license
+# Canonical visual evidence
 
-The PNG files in this directory are modified research-result contact sheets,
-not source frames copied from the dataset. They combine a DL3DV-derived 3DGS
-background with BiGym/MuJoCo robot and task renders, add labels, resize frames,
-and in the cleanup pair compare two derived Gaussian shells.
+The images in this directory correspond only to the canonical DL3DV commercial
+kitchen scene `90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947`
+at revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`.
 
-- Source dataset: DL3DV-10K
-- Scene hash: `951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86`
-- Recorded revision: `abb4dab0d4b6d93c32e6d901c06c35bad03210fb`
-- Modifications: 3DGS reconstruction, MuJoCo/BiGym compositing, resizing,
-  labeling, and contact-sheet layout
-- Use: non-commercial research documentation only
-- License: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/),
-  together with the [DL3DV-10K Terms of Use](https://github.com/DL3DV-10K/Dataset/blob/main/License.md)
+- `canonical-source-contact-sheet.jpg`: selected authorized source trajectory
+  views;
+- `canonical-shell-preview.png`: the aligned light-floor 3DGS shell preview.
 
-Attribution: Ling et al., "DL3DV-10K: A Large-Scale Scene Dataset for Deep
-Learning-based 3D Vision," CVPR 2024. No endorsement by the DL3DV-10K authors
-or organization is implied.
+These are review aids, not proof of all head/wrist camera frames. The current
+package status remains `awaiting_visual_approval`. Images are subject to
+CC BY-NC 4.0 and the current DL3DV dataset terms.

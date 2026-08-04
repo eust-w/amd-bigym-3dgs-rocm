@@ -1,42 +1,22 @@
-# Reconstruction
+# Canonical reconstruction
 
-This directory contains the real A800 reconstruction path used to create the
-three-layer kitchen shell, plus a license-free CPU smoke test.
-
-## Pipeline
+This directory contains the portable reconstruction and validation path for the
+canonical DL3DV commercial-kitchen shell.
 
 ```text
-authorized DL3DV ZIP
-  -> safe extraction + known-pose COLMAP/SIFT initialization
-  -> gsplat default and MCMC 30k candidates
-  -> fail-closed PSNR/SSIM/LPIPS selection
-  -> Graphdeco SH3 PLY + camera path
-  -> Gaussian-to-MuJoCo Sim(3)
-  -> walls / floor / ceiling visual layers
-  -> BiGym three-camera acceptance
+authorized DL3DV-ALL-2K scene
+  -> verified ZIP and known camera poses
+  -> gsplat MCMC scheduled-r20, 60k steps, seed 42, 2M cap
+  -> Gaussian-to-MuJoCo Sim(3) alignment
+  -> walls / metric light floor / ceiling layers
+  -> strict BiGym head and wrist camera rendering
 ```
 
-The experiment pinned gsplat revision
-`4d3a3b69db4de0326f983ccf7b7b255271a17b01`. The exact historical cloud
-runner is retained under `reference/`; `bin/reconstruct.sh` is the portable,
-parameterized entrypoint.
+The source is
+[`4K/90e70328...zip`](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-2K/blob/e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c/4K/90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947.zip)
+at revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`.
 
-The verified combined and three-layer PLY outputs are available from the
-[gated Hugging Face release](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell).
-Download `ply/*`, `metadata/*`, and `SHA256SUMS`, then verify the files before
-running the downstream alignment or BiGym viewer.
-
-## 1. License-safe source acquisition
-
-Accept the current DL3DV terms and authenticate locally first. Never paste a
-token into an environment file or command line.
-
-Source access is requested from
-[DL3DV/DL3DV-ALL-960P](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P).
-The experiment pins
-[`3K/951f9d...zip`](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-960P/blob/abb4dab0d4b6d93c32e6d901c06c35bad03210fb/3K/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip)
-at revision `abb4dab0d4b6d93c32e6d901c06c35bad03210fb`; the downloader verifies
-its expected SHA-256 before extraction.
+## Authorized source download
 
 ```bash
 python -m pip install -r reconstruction/requirements-core.txt
@@ -44,51 +24,31 @@ hf auth login
 make download-reference-data
 ```
 
-The downloader verifies revision, bytes, SHA-256, ZIP CRC, image count and pose
-metadata. Gated data is written beneath `data/private/`, which Git ignores.
+The downloader validates revision, file size, SHA-256, ZIP CRC, source images
+and camera metadata. Credentials remain in the local Hugging Face store.
 
-## 2. A800 reconstruction
-
-Prepare a Python environment with the correct NVIDIA PyTorch build, clone the
-pinned gsplat revision, and install the patched BiGym overlay:
+## Reconstruction
 
 ```bash
-git clone https://github.com/nerfstudio-project/gsplat.git /workspace/gsplat
-git -C /workspace/gsplat checkout 4d3a3b69db4de0326f983ccf7b7b255271a17b01
-make install-bigym
-
-export SOURCE_ARCHIVE="$PWD/data/private/dl3dv-kitchen/951f9db189a7023708b7798e147e04048a84ce039c5761e8ecb1aa65dcb2da86.zip"
+export SOURCE_ARCHIVE="$PWD/data/private/dl3dv-kitchen/90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947.zip"
 export SOURCE_REPORT="$PWD/data/private/dl3dv-kitchen/source.json"
 export GSPLAT_DIR=/workspace/gsplat
 export BIGYM_DIR=/workspace/amd-bigym-3dgs/src/bigym
-export WORK_ROOT=/workspace/runs/dl3dv-kitchen-a800
+export WORK_ROOT=/workspace/runs/dl3dv-commercial-kitchen-a800
 reconstruction/bin/reconstruct.sh
 ```
 
-Both `default` and `mcmc` candidates must complete. The selector requires
-PSNR >= 30, SSIM >= 0.92 and LPIPS <= 0.15; otherwise it exits non-zero and
-does not authorize formal export.
+The canonical outputs and exact hashes are published in the
+[manually gated shell repository](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)
+and locked in `data/manifests/a800-reconstruction.public.json`.
 
-## 3. CPU smoke
+## CPU contract test
 
 ```bash
 make smoke-reconstruction
 ```
 
-This generates a tiny synthetic binary PLY in a temporary directory, exports
-all four expected PLYs, verifies their counts and hashes, confirms a clear
-central workspace, and checks that the visual shell adds zero physics objects.
-
-## What is proven
-
-- The source was pinned and integrity checked.
-- The published scripts are the real reconstruction/export implementation.
-- The actual A800 run metrics and output hashes are recorded in `data/manifests`.
-- The shell exporter is independently exercised in CI with license-free data.
-
-## What is not proven by CI
-
-- Access to gated DL3DV data;
-- availability of an A800 or Radeon GPU;
-- photographic quality from arbitrary H1 wrist viewpoints;
-- ownership or redistributability of upstream demonstrations.
+This verifies the exporter and non-physics visual-shell contract with a tiny
+license-free synthetic fixture. It does not establish GPU reconstruction or
+human visual acceptance. The canonical package remains
+`technical_pass_visual_approval_pending`.

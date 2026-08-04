@@ -184,8 +184,7 @@ source = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding="utf-8"))
 expected_profile = sys.argv[3]
 expected_hash = sys.argv[4]
 allowed_revisions = {
-    "abb4dab0d4b6d93c32e6d901c06c35bad03210fb",
-    "fd16cc2b2f4c79b69368e422d8c4552453f866eb",
+    "e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c",
 }
 if source.get("status") != "complete":
     raise SystemExit("local source report is not complete")
@@ -597,12 +596,12 @@ if [[ "${QUALITY_PASSED}" == "true" ]]; then
     --height 1080 \
     --fps 30 \
     --seconds 18 \
-    --scene-slug dl3dv_residential_kitchen_shell \
+    --scene-slug dl3dv_commercial_kitchen_shell \
     >"${RESULTS}/offline-render.log" 2>&1
   python3 "${PROJECT}/competition/reconstruction/make_scene_shell_media.py" \
-    --video "${DEMO}/dl3dv_residential_kitchen_shell_mujoco_3dgs.mp4" \
+    --video "${DEMO}/dl3dv_commercial_kitchen_shell_mujoco_3dgs.mp4" \
     --output "${DEMO}" \
-    --prefix dl3dv_residential_kitchen_shell \
+    --prefix dl3dv_commercial_kitchen_shell \
     >"${RESULTS}/scene-shell-media.log" 2>&1
   stage="bigym-three-camera-300-frame-acceptance"
   announce
