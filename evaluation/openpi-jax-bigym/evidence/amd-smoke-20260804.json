@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "amd_bounded_smoke_complete",
+  "date": "2026-08-04",
+  "gpu": "AMD Radeon PRO W7900D (gfx1100)",
+  "task": "DishwasherUnloadCutleryLong",
+  "episodes": 3,
+  "seeds": [0, 1, 2],
+  "max_steps_per_episode": 100,
+  "successes": 0,
+  "success_rate": 0.0,
+  "policy_requests": 30,
+  "policy_latency_ms": {
+    "mean": 213.38598270279667,
+    "p50": 210.87627694942057,
+    "p95": 234.52223103959105,
+    "maximum": 247.67014337703586
+  },
+  "failure_categories": {
+    "max_steps_without_success": 3
+  },
+  "visual_shell": {
+    "strict_runtime_passed": true,
+    "human_three_camera_review": "passed",
+    "source_camera_index": 296,
+    "maximum_capture_path_translation_m": 0.18809790503955182,
+    "maximum_capture_path_rotation_degrees": 46.81137337427233,
+    "room_height_m": 3.4049458499049234,
+    "alignment_sha256": "f8d7199063ec0389054938b8090d4e85b86b2c81b86f3aa1184e841ebd1b4056",
+    "profile_sha256": "02b9e94a7ac543b8385b86b7d862c823591f181ed562bb4c6b8eceb7bd0d0e86",
+    "calibration_receipt_sha256": "6b318c5f61f8f03ef0cb05a2da3b7a21164183979f5641bcb45bc826278f1e91"
+  },
+  "gates": {
+    "jax_rocm_policy_server": true,
+    "real_checkpoint_inference": true,
+    "real_bigym_closed_loop": true,
+    "strict_three_camera_3dgs": true,
+    "human_visual_review": true,
+    "policy_task_success": false,
+    "formal_32_episode_benchmark": false
+  },
+  "claim_boundary": "The AMD runtime, real checkpoint request path, BiGym loop and calibrated 3DGS views passed. The bounded 3x100-step smoke had 0/3 task successes; the formal 32-episode benchmark has not been run."
+}

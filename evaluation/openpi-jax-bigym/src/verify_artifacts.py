@@ -71,6 +71,9 @@ def main() -> None:
         "alignment.json": lock["visual_shell"]["alignment_sha256"],
         "gaussians_shell.ply": lock["visual_shell"]["combined_ply_sha256"],
     }
+    receipt_name = lock["visual_shell"].get("calibration_receipt")
+    if receipt_name:
+        checks[receipt_name] = lock["visual_shell"]["calibration_receipt_sha256"]
     for name, expected in checks.items():
         path = shell / name
         if not path.is_file():
@@ -82,6 +85,8 @@ def main() -> None:
     profile = json.loads((shell / "scene-shell-profile.json").read_text())
     if profile.get("status") != "passed":
         raise SystemExit(f"unexpected shell status: {profile.get('status')}")
+    if profile.get("human_visual_review", {}).get("status") != "passed":
+        raise SystemExit("calibrated shell human visual review is not passed")
     if profile["alignment"]["path"] != "alignment.json":
         raise SystemExit("visual-shell alignment path is not pinned alignment.json")
     if profile["integration_contract"]["camera_names"] != [

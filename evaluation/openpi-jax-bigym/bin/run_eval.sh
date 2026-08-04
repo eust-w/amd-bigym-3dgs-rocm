@@ -7,6 +7,7 @@ test -d "$BIGYM_DIR/.git" || fail "run bootstrap_sources.sh first"
 test -f "$SHELL_DIR/scene-shell-profile.json" || fail "run download_artifacts.sh first"
 
 MODE=${1:-smoke}
+HUMAN_VISUAL_REVIEW=${HUMAN_VISUAL_REVIEW:-pending}
 case "$MODE" in
   smoke) N_EPISODES=${N_EPISODES:-3} ;;
   formal) N_EPISODES=${N_EPISODES:-32} ;;
@@ -38,7 +39,8 @@ export GSPLAT_PREBUILT_DIR=${GSPLAT_PREBUILT_DIR:-}
 python3 "$EVAL_DIR/src/summarize_results.py" \
   --results "$OUTPUT_DIR/dishwasher_unload_cutlery_long/results.json" \
   --output "$OUTPUT_DIR/evaluation-summary.json" \
-  --expected-episodes "$N_EPISODES"
+  --expected-episodes "$N_EPISODES" \
+  --human-visual-review "$HUMAN_VISUAL_REVIEW"
 
 rocm-smi --showmeminfo vram --showuse > "$RUNTIME_EVIDENCE_DIR/rocm-smi-after-$MODE.txt"
 printf 'BIGYM_EVAL_COMPLETE mode=%s episodes=%s output=%s\n' "$MODE" "$N_EPISODES" "$OUTPUT_DIR"

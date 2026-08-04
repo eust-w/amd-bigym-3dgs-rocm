@@ -178,6 +178,13 @@ keeps the JAX policy server and the PyTorch/gsplat BiGym renderer in separate
 ROCm processes (one or two AMD GPUs), then runs a 3-episode smoke gate and a
 32-seed formal `DishwasherUnloadCutleryLong` benchmark.
 
+The latest live-camera-calibrated Radeon smoke receipt is
+[`evaluation/openpi-jax-bigym/evidence/amd-smoke-20260804.json`](evaluation/openpi-jax-bigym/evidence/amd-smoke-20260804.json).
+All three strict 3DGS camera views passed manual clarity review. The bounded
+`3 x 100`-step smoke completed with 30 real JAX requests and `0/3` task
+successes, so the runtime integration is reproducible but formal 32-episode
+policy acceptance remains open.
+
 ```bash
 make verify
 make verify-evaluation

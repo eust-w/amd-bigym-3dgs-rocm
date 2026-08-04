@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any
 
 
-def summarize(results: dict[str, Any], expected_episodes: int) -> dict[str, Any]:
+def summarize(
+    results: dict[str, Any], expected_episodes: int, human_visual_review: str = "pending"
+) -> dict[str, Any]:
+    if human_visual_review not in {"pending", "passed", "failed"}:
+        raise ValueError("human_visual_review must be pending, passed, or failed")
     episodes = results.get("episodes", [])
     failures = Counter(
         episode.get("failure_reason") or "unclassified"
@@ -30,6 +34,7 @@ def summarize(results: dict[str, Any], expected_episodes: int) -> dict[str, Any]
         int(results.get("policy_requests", 0)) > 0
         and results.get("policy_latency_ms", {}).get("p50") is not None
     )
+    human_visual_pass = human_visual_review == "passed"
     return {
         "schema_version": 1,
         "status": "evaluation_complete" if structural_pass and visual_shell_pass and policy_pass else "evaluation_failed",
@@ -44,10 +49,13 @@ def summarize(results: dict[str, Any], expected_episodes: int) -> dict[str, Any]
             "episode_structure": structural_pass,
             "policy_requests": policy_pass,
             "strict_visual_shell_runtime": visual_shell_pass,
-            "human_visual_review": False,
+            "human_visual_review": human_visual_pass,
         },
+        "human_visual_review_status": human_visual_review,
         "claim_boundary": (
-            "evaluation execution is complete; visual publication remains pending until "
+            "evaluation execution and human three-camera visual review are complete"
+            if human_visual_pass
+            else "evaluation execution is complete; visual publication remains pending until "
             "the recorded three-camera frames are manually reviewed"
         ),
     }
@@ -58,9 +66,14 @@ def main() -> None:
     parser.add_argument("--results", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-episodes", type=int, required=True)
+    parser.add_argument(
+        "--human-visual-review",
+        choices=("pending", "passed", "failed"),
+        default="pending",
+    )
     args = parser.parse_args()
     results = json.loads(args.results.read_text(encoding="utf-8"))
-    summary = summarize(results, args.expected_episodes)
+    summary = summarize(results, args.expected_episodes, args.human_visual_review)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))

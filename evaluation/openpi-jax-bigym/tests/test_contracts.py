@@ -68,6 +68,12 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(benchmark["seed0"], 0)
         self.assertTrue(benchmark["strict_visual_shell"])
 
+    def test_visual_shell_lock_requires_live_calibration_receipt(self) -> None:
+        visual_shell = self.lock["visual_shell"]
+        self.assertEqual(visual_shell["calibration_source_camera_index"], 296)
+        self.assertEqual(visual_shell["calibration_receipt"], "calibration-receipt.json")
+        self.assertEqual(len(visual_shell["calibration_receipt_sha256"]), 64)
+
     def test_probe_png_is_valid_rgb(self) -> None:
         payload = self.probe.png_rgb(12, 9, (1, 2, 3))
         self.assertEqual(payload[:8], b"\x89PNG\r\n\x1a\n")
@@ -95,6 +101,10 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(summary["status"], "evaluation_complete")
         self.assertEqual(summary["failure_categories"]["policy_timeout"], 1)
         self.assertFalse(summary["gates"]["human_visual_review"])
+
+        reviewed = self.summary.summarize(results, 3, "passed")
+        self.assertTrue(reviewed["gates"]["human_visual_review"])
+        self.assertEqual(reviewed["human_visual_review_status"], "passed")
 
     def test_incomplete_episode_count_fails(self) -> None:
         results = {

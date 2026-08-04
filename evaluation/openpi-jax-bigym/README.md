@@ -17,8 +17,37 @@ PyTorch/gsplat do not load conflicting ROCm stacks into one process.
 
 The complete machine-readable contract is in
 [`VERSION_LOCK.json`](VERSION_LOCK.json). The shell downloader uses the actual
-AMD Hub `scene-shell-profile.json` and its accompanying `alignment.json`; it
-does not reuse the older A800 profile under `configs/`.
+AMD Hub `scene-shell-profile.json` and its accompanying live-camera-calibrated
+`alignment.json`; it does not reuse the older A800 profile under `configs/`.
+
+## Live BiGym camera calibration
+
+The first AMD runtime probe proved that the PLY and renderer were healthy, but
+the original coarse room transform placed the live head/wrist rig outside the
+useful capture path. The result was technically valid yet visibly blurred. The
+checked-in [`src/calibrate_amd_shell.py`](src/calibrate_amd_shell.py) fixes this
+without changing the Gaussian geometry:
+
+1. convert the authoritative 352-camera OpenSplat export to camera-to-world
+   poses;
+2. measure the live BiGym head, left-wrist and right-wrist cameras at reset;
+3. fit an upright metric Sim(3) transform over all capture-path anchors;
+4. require all three live cameras to remain close to the captured trajectory;
+5. use a metric procedural floor instead of treating floor-like Gaussian
+   outliers as trustworthy geometry.
+
+The reproduced AMD fit selected capture camera `296`, final scale
+`3.837305195946387`, maximum live-camera path distance `0.18809790503955182 m`,
+maximum rotation error `46.81137337427233°`, and room height
+`3.4049458499049234 m`. Head and both wrist frames were then reviewed as clear
+and continuous before the multi-seed smoke run was started.
+
+The recorded bounded AMD smoke result is
+[`evidence/amd-smoke-20260804.json`](evidence/amd-smoke-20260804.json): three
+distinct seeds, 100 steps per seed, 30 real policy requests, `213.386 ms` mean
+policy latency, and `0/3` task successes. This passes the runtime and visual
+integration gates; it does not claim policy task success or completion of the
+32-episode formal benchmark.
 
 ## Runtime split
 
@@ -80,6 +109,15 @@ Validate it in terminal B, then run the closed loop:
 ./evaluation/openpi-jax-bigym/bin/run_eval.sh formal
 ```
 
+`run_eval.sh` keeps human review pending by default. After reviewing the
+recorded initial/final head and wrist PNGs, explicitly record the decision when
+regenerating the summary:
+
+```bash
+export HUMAN_VISUAL_REVIEW=passed   # use failed when any view is blank/blurred
+./evaluation/openpi-jax-bigym/bin/run_eval.sh smoke
+```
+
 The smoke run is three episodes. The formal run is 32 distinct reset seeds.
 Every episode retains a head-camera H.264 video plus initial/final head and
 wrist PNGs. Failed policy replays remain in the diagnostic result set and are
@@ -112,8 +150,8 @@ The gates are deliberately separate:
    with strict 3DGS rendering.
 4. `evaluation-summary.json` proves episode counts, latency and failure
    categories are complete.
-5. Human review of the recorded three-camera images is still required before
-   claiming the room shell is visually accepted.
+5. `human_visual_review_status=passed` proves that the recorded three-camera
+   images were explicitly reviewed; the default remains `pending`.
 
 Run the license-free contract tests locally or in CI:
 
