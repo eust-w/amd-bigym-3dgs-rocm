@@ -6,8 +6,9 @@ at revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`.
 
 - `canonical-source-contact-sheet.jpg`: selected authorized source trajectory
   views;
-- `bigym-3dgs-shell-reference-cover.jpg`: clear frame from the user-supplied
-  four-view BiGym + 3DGS runtime reference video; linked from both READMEs.
+- `bigym-3dgs-runtime-demo.gif`: six-second, 900-pixel-wide, 8 fps inline
+  preview of the user-supplied four-view BiGym + 3DGS runtime video; clicking
+  it in either README opens the full-resolution MP4.
 - `cutlery-cam-high-preview.gif`: a six-second, 640-pixel-wide excerpt starting
   at 330 seconds in the merged canonical `cam_high` H.264 stream; generated at
   10 fps with a 128-color palette for GitHub README playback.

@@ -1,11 +1,38 @@
-# AMD Radeon BiGym + 3DGS 厨房环境
-
-[English](README.md) | [中文](README.zh-CN.md) ·
-[AMD/ROCm `main`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/main)
+<div align="center">
+  <h1>AMD Radeon BiGym + 3DGS 厨房环境</h1>
+  <p><strong>面向 BiGym/MuJoCo 的 ROCm 原生 3D Gaussian 重建与可视化房间壳集成</strong></p>
+  <p>
+    <a href="https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/eust-w/amd-bigym-3dgs-rocm/ci.yml?branch=main&amp;style=flat-square&amp;label=CI" alt="CI 状态"></a>
+    <a href="evidence/amd-rocm-main-status.json"><img src="https://img.shields.io/badge/Reproduction-passed-22C55E?style=flat-square" alt="AMD 复现通过"></a>
+    <a href="evidence/amd-rocm-main-status.json"><img src="https://img.shields.io/badge/AMD%20Radeon%20PRO-W7900D-ED1C24?style=flat-square&amp;logo=amd&amp;logoColor=white" alt="AMD Radeon PRO W7900D"></a>
+    <a href="reconstruction/README.md"><img src="https://img.shields.io/badge/ROCm-HIP%20%7C%20gfx1100-6F42C1?style=flat-square" alt="ROCm HIP gfx1100"></a>
+    <a href="patches/bigym-3dgs-shell-and-collector.patch"><img src="https://img.shields.io/badge/BiGym-4.1-2563EB?style=flat-square" alt="BiGym 4.1"></a>
+    <a href="#amdrocm-快速开始"><img src="https://img.shields.io/badge/MuJoCo-3.10-0891B2?style=flat-square" alt="MuJoCo 3.10"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/Code%20license-Apache--2.0-F59E0B?style=flat-square" alt="Apache 2.0 代码许可"></a>
+    <a href="https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell/tree/amd-rocm-w7900d-20260804"><img src="https://img.shields.io/badge/Hugging%20Face-AMD%20artifacts-FFD21E?style=flat-square" alt="Hugging Face AMD 产物"></a>
+  </p>
+  <p>
+    <a href="#bigym--3dgs-运行演示">运行演示</a> ·
+    <a href="#amd-radeon-实机复现">AMD 结果</a> ·
+    <a href="#amdrocm-快速开始">快速开始</a> ·
+    <a href="#仓库校验">仓库校验</a> ·
+    <a href="https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/main">AMD/ROCm main</a>
+  </p>
+  <p><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a></p>
+</div>
 
 这是 AMD Radeon/ROCm 主实现，用于重建、加载和校验 BiGym
 `DishwasherUnloadCutleryLong` 使用的纯视觉 3D Gaussian Splatting 厨房壳。
 下面的重建结果和可下载 shell 均由 AMD Radeon PRO W7900D 生成。
+
+## BiGym + 3DGS 运行演示
+
+[![3DGS 厨房中的 BiGym 机器人与洗碗机工作台动态演示](docs/images/bigym-3dgs-runtime-demo.gif)](docs/videos/bigym-3dgs-shell-reference.mp4)
+
+上面的 6 秒动态图会在 GitHub 内直接循环播放。点击即可观看完整的
+[31 秒、`1696x960` MP4](docs/videos/bigym-3dgs-shell-reference.mp4)，其中同时
+包含头部第一视角、左右腕部相机和外部视角。该视频仅作为运行集成效果参考，
+不代表独立的 32 条采集已经通过 AMD 回放验收。
 
 ## AMD Radeon 实机复现
 
@@ -24,16 +51,6 @@ OpenSplat/HIP 训练 15,000 steps 的渲染结果。清晰预览门禁以 PSNR
 | 清理后结果 | 1,458,354 个 Gaussian |
 | 房间壳 | 中央 `3x3m` 工作区净空，新增物理/碰撞为 0 |
 | 机器状态 | `amd_rocm_reproduction_passed` |
-
-## BiGym + 3DGS 运行效果参考
-
-[![3DGS 厨房中的 BiGym 机器人与洗碗机工作台；点击观看参考视频](docs/images/bigym-3dgs-shell-reference-cover.jpg)](docs/videos/bigym-3dgs-shell-reference.mp4)
-
-点击上方清晰画面即可观看完整的 [31 秒、`1696x960` MP4
-参考视频](docs/videos/bigym-3dgs-shell-reference.mp4)。视频同时展示头部第一视角、
-左右腕部相机和外部视角，以及机器人在 3DGS 厨房壳内操作洗碗机工作台的效果。
-该视频由用户提供，仅作为运行集成效果参考，不代表独立的 32 条采集已经通过
-AMD 回放验收。
 
 ## 源素材
 
