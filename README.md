@@ -1,30 +1,14 @@
 # AMD Radeon BiGym + 3DGS kitchen
 
 [English](README.md) | [中文](README.zh-CN.md) ·
-[AMD/ROCm `main`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/main) ·
-[A800/CUDA `a800`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800)
+[AMD/ROCm `main`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/main)
 
-This is the AMD Radeon/ROCm implementation branch for replaying and validating
-BiGym `DishwasherUnloadCutleryLong` with a visual-only 3D Gaussian Splatting
-kitchen shell. The verified NVIDIA A800/CUDA reference is preserved unchanged
-on the [`a800` branch](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800).
+This is the AMD Radeon/ROCm implementation for reconstructing, loading and
+validating the visual-only 3D Gaussian Splatting kitchen shell used by BiGym
+`DishwasherUnloadCutleryLong`. The reconstruction and downloadable shell named
+below were produced on AMD Radeon PRO W7900D, not copied from a CUDA run.
 
-Both branches use one canonical data/shell identity. Superseded scene and
-collection identities are not supported.
-
-## Preview from the canonical material
-
-| Aligned 3DGS room shell | Selected source trajectory views |
-| --- | --- |
-| ![Aligned light-floor 3DGS commercial kitchen shell](docs/images/canonical-shell-preview.png) | ![DL3DV commercial-kitchen source trajectory contact sheet](docs/images/canonical-source-contact-sheet.jpg) |
-
-![Six-second excerpt from the canonical merged cam_high replay stream](docs/images/cutlery-cam-high-preview.gif)
-
-The GIF is a six-second excerpt from the verified merged `cam_high` stream. It
-is included as review evidence, not as a replacement for the gated full video
-or human review of all three cameras.
-
-### Reproduced on AMD Radeon
+## Reproduced on AMD Radeon
 
 ![Held-out DL3DV reference beside the 15,000-step AMD ROCm reconstruction](docs/images/amd-rocm-heldout-vs-reference.png)
 
@@ -34,37 +18,51 @@ steps. The clear-preview gate passed at PSNR `27.9066` and SSIM `0.9370`.
 Obvious projected streak Gaussians and one all-camera-invisible spatial outlier
 were removed before the room-shell export.
 
-## Branch and evidence boundary
+| AMD result | Verified value |
+| --- | --- |
+| GPU | AMD Radeon PRO W7900D, `gfx1100` |
+| Runtime | PyTorch ROCm/HIP |
+| Reconstruction | 352 images at `1920x1080`, 15,000 OpenSplat steps |
+| Cleaned output | 1,458,354 Gaussians |
+| Room shell | central `3x3m` workspace clear; zero added physics/collisions |
+| Machine status | `amd_rocm_reproduction_passed` |
 
-| Branch or artifact | Hardware stage | Current claim |
+## Source material
+
+![Selected DL3DV commercial-kitchen source views](docs/images/canonical-source-contact-sheet.jpg)
+
+The source contact sheet is provided for provenance. The downloadable PLY and
+BiGym shell configuration in this README always use the AMD Hugging Face
+revision shown below.
+
+## AMD evidence boundary
+
+| Artifact | Current claim |
 | --- | --- | --- |
-| `main` | AMD Radeon PRO W7900D `gfx1100`, ROCm/HIP | Canonical 352-image reconstruction reproduced; cleaned PLY, clear held-out render and collision-free room-shell gates passed |
-| `a800` | NVIDIA A800, CUDA 12.8 | Locked reference: shell reconstruction and 32-episode collection passed technical checks |
-| Hugging Face dataset | Produced on A800 | 32 episodes and three merged camera videos; visual status `awaiting_visual_approval` |
-| Hugging Face shell | A800 `main` + AMD branch | Exact A800 reference retained; independently reproduced AMD PLY, layers, alignment, receipt and preview published on a separate HF branch |
+| GitHub `main` | AMD reconstruction code, receipt and reproducible checks |
+| HF revision `amd-rocm-w7900d-20260804` | AMD cleaned PLY, split/combined shell, alignment, profile and preview |
+| BiGym collection | not promoted by the reconstruction receipt; three-camera collection remains a separate acceptance stage |
 
-The canonical reconstruction has now been reproduced on Radeon. This does
-**not** claim that the A800 32-episode collection has also been replayed on AMD:
-that downstream acceptance still requires native gsplat rasterization, strict
-three-camera replay, full-video decode and separate human visual review.
+The reconstruction has been reproduced on Radeon. This does **not** claim that
+the separate 32-episode collection has also been replayed on AMD: downstream
+acceptance still requires native gsplat rasterization, strict three-camera
+replay, full-video decode and separate human visual review.
 
 Machine-readable status is recorded in
 [`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json). The
-A800 baseline remains explicit in
-[`evidence/a800-reference-validation-summary.json`](evidence/a800-reference-validation-summary.json).
+previous CUDA implementation is archived separately on the
+[`a800` branch](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800); it is
+not the download target used by this README.
 
 ## Canonical inputs
 
 | Artifact | Canonical value |
 | --- | --- |
-| LeRobot v3 reference | [eustance/openSource_AMD_AI_DevMaster_Hackathon_202608](https://huggingface.co/datasets/eustance/openSource_AMD_AI_DevMaster_Hackathon_202608) |
-| Dataset path | `bigym-3dgs-light-floor-replay-plan-v2-20260802/dishwasher_unload_cutlery_long` |
-| 3DGS shell | [eustance/amd-bigym-3dgs-kitchen-shell](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell) |
+| AMD 3DGS shell | [HF revision `amd-rocm-w7900d-20260804`](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell/tree/amd-rocm-w7900d-20260804) |
 | DL3DV source | [DL3DV/DL3DV-ALL-2K](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-2K), revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c` |
 | Scene hash | `90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947` |
-| Combined shell | 862,104 Gaussians, SHA-256 `086f1f5757523db94349de16707806e74a65bac35b24d9e4e7437639164738a7` |
 | AMD cleaned reconstruction | 1,458,354 Gaussians, SHA-256 `d49bcf7219f63a92ee0d40f8d86e618176892ec89853fecc5e217829bff42b9b` |
-| AMD shell package | [HF branch `amd-rocm-w7900d-20260804`](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell/tree/amd-rocm-w7900d-20260804) |
+| AMD combined shell | 1,458,255 Gaussians, SHA-256 `67ab42e99833749d17db499f4ea1c968b193db26760f567244632f41ae58cb17` |
 
 Both Hugging Face repositories are manually gated because the canonical
 material remains subject to the current DL3DV and upstream terms.
@@ -101,18 +99,19 @@ The generated receipt is accepted only with status
 `amd_rocm_reproduction_passed`. See
 [`reconstruction/README.md`](reconstruction/README.md) for the exact gates.
 
-Download the gated canonical shell, verify it against
-[`data/manifests/a800-reconstruction.public.json`](data/manifests/a800-reconstruction.public.json),
-and stage its exact layers:
+Download the gated AMD shell at the pinned HF revision, verify it against
+[`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json), and
+stage its exact layers:
 
 ```bash
 hf auth login
 hf download eustance/amd-bigym-3dgs-kitchen-shell \
-  --repo-type dataset --local-dir data/private/canonical-shell
+  --repo-type dataset --revision amd-rocm-w7900d-20260804 \
+  --local-dir data/private/amd-rocm-kitchen-shell
 
-export SHELL_WALLS="$PWD/data/private/canonical-shell/walls_fixed_kitchen.ply"
-export SHELL_FLOOR="$PWD/data/private/canonical-shell/floor_perimeter.ply"
-export SHELL_CEILING="$PWD/data/private/canonical-shell/ceiling_lights.ply"
+export SHELL_WALLS="$PWD/data/private/amd-rocm-kitchen-shell/walls_fixed_kitchen.ply"
+export SHELL_FLOOR="$PWD/data/private/amd-rocm-kitchen-shell/floor_perimeter.ply"
+export SHELL_CEILING="$PWD/data/private/amd-rocm-kitchen-shell/ceiling_lights.ply"
 export SHELL_DIR="$PWD/data/private/amd-runtime-shell"
 make stage-shell
 ```
