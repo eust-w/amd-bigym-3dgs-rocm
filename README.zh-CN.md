@@ -164,8 +164,15 @@ ROCm 构建边界见 [`docs/02-rocm-gsplat.md`](docs/02-rocm-gsplat.md)，坐标
 
 ## 仓库校验
 
+锁定 OpenPI JAX 权重的策略评测链路单独放在
+[`evaluation/openpi-jax-bigym/`](evaluation/openpi-jax-bigym/README.md)。它用
+JAX 推理服务与 PyTorch/gsplat BiGym 渲染器隔离为两个 ROCm 进程；支持单卡
+共享或双卡分离，先跑 3 条 smoke，再以 32 个不同 seed 正式评测
+`DishwasherUnloadCutleryLong`。
+
 ```bash
 make verify
+make verify-evaluation
 make smoke-reconstruction
 python scripts/check_markdown_links.py
 ```

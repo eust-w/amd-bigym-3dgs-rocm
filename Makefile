@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON ?= python3
 
-.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify
+.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify verify-evaluation
 
 preflight:
 	./scripts/preflight_rocm.sh
@@ -57,3 +57,6 @@ clean:
 
 verify:
 	./scripts/verify_public_repo.sh
+
+verify-evaluation:
+	./evaluation/openpi-jax-bigym/bin/verify.sh

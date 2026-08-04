@@ -172,8 +172,15 @@ and compositing path.
 
 ## Repository checks
 
+The policy-evaluation lane for the pinned OpenPI JAX checkpoint is isolated in
+[`evaluation/openpi-jax-bigym/`](evaluation/openpi-jax-bigym/README.md). It
+keeps the JAX policy server and the PyTorch/gsplat BiGym renderer in separate
+ROCm processes (one or two AMD GPUs), then runs a 3-episode smoke gate and a
+32-seed formal `DishwasherUnloadCutleryLong` benchmark.
+
 ```bash
 make verify
+make verify-evaluation
 make smoke-reconstruction
 python scripts/check_markdown_links.py
 ```

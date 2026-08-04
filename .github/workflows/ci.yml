@@ -26,6 +26,9 @@ jobs:
       - name: Verify local Markdown links
         run: python scripts/check_markdown_links.py
 
+      - name: Verify OpenPI JAX BiGym evaluation contracts
+        run: ./evaluation/openpi-jax-bigym/bin/verify.sh
+
       - name: Exercise the reconstruction and shell-export contract
         run: make smoke-reconstruction PYTHON=python
 
