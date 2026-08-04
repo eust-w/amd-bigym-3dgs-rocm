@@ -6,7 +6,8 @@ at revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`.
 
 - `canonical-source-contact-sheet.jpg`: selected authorized source trajectory
   views;
-- `canonical-shell-preview.png`: the aligned light-floor 3DGS shell preview.
+- `bigym-3dgs-shell-reference-cover.jpg`: clear frame from the user-supplied
+  four-view BiGym + 3DGS runtime reference video; linked from both READMEs.
 - `cutlery-cam-high-preview.gif`: a six-second, 640-pixel-wide excerpt starting
   at 330 seconds in the merged canonical `cam_high` H.264 stream; generated at
   10 fps with a 128-color palette for GitHub README playback.
@@ -17,5 +18,5 @@ at revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`.
 
 These are review aids, not proof of all head/wrist camera frames. The Radeon
 image supports the reconstruction gate only; the 32-episode three-camera
-package remains a separate A800 reference awaiting visual approval. Images are
-subject to CC BY-NC 4.0 and the current DL3DV dataset terms.
+package remains a separate reference awaiting visual approval. Images are
+subject to the applicable upstream and DL3DV dataset terms.

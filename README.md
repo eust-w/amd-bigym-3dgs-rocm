@@ -27,6 +27,17 @@ were removed before the room-shell export.
 | Room shell | central `3x3m` workspace clear; zero added physics/collisions |
 | Machine status | `amd_rocm_reproduction_passed` |
 
+## BiGym + 3DGS runtime reference
+
+[![BiGym robot and dishwasher workbench inside the 3DGS kitchen; click to watch the reference video](docs/images/bigym-3dgs-shell-reference-cover.jpg)](docs/videos/bigym-3dgs-shell-reference.mp4)
+
+Click the clear frame above to watch the full [31-second, `1696x960` MP4
+reference](docs/videos/bigym-3dgs-shell-reference.mp4). It shows the head,
+left-wrist, right-wrist and external views while the robot operates at the
+dishwasher workbench inside the kitchen shell. This user-supplied clip is a
+runtime integration reference, not evidence that the separate 32-episode
+collection has passed AMD replay acceptance.
+
 ## Source material
 
 ![Selected DL3DV commercial-kitchen source views](docs/images/canonical-source-contact-sheet.jpg)

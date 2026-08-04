@@ -25,6 +25,16 @@ OpenSplat/HIP 训练 15,000 steps 的渲染结果。清晰预览门禁以 PSNR
 | 房间壳 | 中央 `3x3m` 工作区净空，新增物理/碰撞为 0 |
 | 机器状态 | `amd_rocm_reproduction_passed` |
 
+## BiGym + 3DGS 运行效果参考
+
+[![3DGS 厨房中的 BiGym 机器人与洗碗机工作台；点击观看参考视频](docs/images/bigym-3dgs-shell-reference-cover.jpg)](docs/videos/bigym-3dgs-shell-reference.mp4)
+
+点击上方清晰画面即可观看完整的 [31 秒、`1696x960` MP4
+参考视频](docs/videos/bigym-3dgs-shell-reference.mp4)。视频同时展示头部第一视角、
+左右腕部相机和外部视角，以及机器人在 3DGS 厨房壳内操作洗碗机工作台的效果。
+该视频由用户提供，仅作为运行集成效果参考，不代表独立的 32 条采集已经通过
+AMD 回放验收。
+
 ## 源素材
 
 ![DL3DV 商业厨房源轨迹抽样视图](docs/images/canonical-source-contact-sheet.jpg)

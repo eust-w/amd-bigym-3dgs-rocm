@@ -87,6 +87,12 @@ assert 1_000_000 < preview.stat().st_size < 10_000_000
 amd_preview = Path("docs/images/amd-rocm-heldout-vs-reference.png")
 assert amd_preview.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 assert 1_000_000 < amd_preview.stat().st_size < 10_000_000
+reference_cover = Path("docs/images/bigym-3dgs-shell-reference-cover.jpg")
+assert reference_cover.read_bytes()[:2] == b"\xff\xd8"
+assert 100_000 < reference_cover.stat().st_size < 1_000_000
+reference_video = Path("docs/videos/bigym-3dgs-shell-reference.mp4")
+assert reference_video.read_bytes()[4:8] == b"ftyp"
+assert 5_000_000 < reference_video.stat().st_size < 10_485_760
 print("DATA_CONTRACT_OK")
 PY
 
