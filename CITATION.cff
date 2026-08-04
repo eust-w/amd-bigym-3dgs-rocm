@@ -6,5 +6,5 @@ authors:
   - family-names: eust-w
 repository-code: https://github.com/eust-w/amd-bigym-3dgs-rocm
 license: Apache-2.0
-version: 0.2.0
-date-released: 2026-08-03
+version: 0.3.0
+date-released: 2026-08-04

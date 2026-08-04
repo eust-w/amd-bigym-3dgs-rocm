@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 PYTHON=${PYTHON:-python3}
-WORK_ROOT=${WORK_ROOT:-"$REPO_ROOT/.repro/a800-kitchen"}
+WORK_ROOT=${WORK_ROOT:-"$REPO_ROOT/.repro/kitchen"}
 SOURCE_ARCHIVE=${SOURCE_ARCHIVE:?set SOURCE_ARCHIVE to the authorized DL3DV zip}
 SOURCE_REPORT=${SOURCE_REPORT:?set SOURCE_REPORT to source.json from the downloader}
 GSPLAT_DIR=${GSPLAT_DIR:?set GSPLAT_DIR to pinned gsplat checkout}

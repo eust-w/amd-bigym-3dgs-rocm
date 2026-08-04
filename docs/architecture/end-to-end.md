@@ -8,7 +8,7 @@ flowchart TB
     D3[Public manifests and synthetic fixture]
   end
 
-  subgraph Reconstruction[A800 reconstruction plane]
+  subgraph Reconstruction[A800 reference branch]
     R1[Safe extraction]
     R2[Known-pose COLMAP + SIFT]
     R3[default and MCMC 30k]
@@ -16,7 +16,7 @@ flowchart TB
     R5[Sim3 and room-layer export]
   end
 
-  subgraph Runtime[AMD ROCm runtime plane]
+  subgraph Runtime[AMD ROCm main branch]
     A1[ROCm gsplat native gate]
     A2[Gaussian background render]
     A3[MuJoCo segmentation foreground]

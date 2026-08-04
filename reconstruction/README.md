@@ -1,33 +1,68 @@
 # Canonical reconstruction
 
-This directory contains the portable reconstruction and validation path for the
-canonical DL3DV commercial-kitchen shell.
+This directory contains two explicit reconstruction paths for the same pinned
+DL3DV commercial-kitchen scene:
 
-```text
-authorized DL3DV-ALL-2K scene
-  -> verified ZIP and known camera poses
-  -> gsplat MCMC scheduled-r20, 60k steps, seed 42, 2M cap
-  -> Gaussian-to-MuJoCo Sim(3) alignment
-  -> walls / metric light floor / ceiling layers
-  -> strict BiGym head and wrist camera rendering
-```
+- `reconstruct_rocm.sh`: the AMD Radeon `gfx1100` main path, using OpenSplat's
+  native HIP backend;
+- `reconstruct.sh`: the locked A800/gsplat reference implementation retained
+  for provenance and cross-platform comparison.
 
-The source is
+The source object is
 [`4K/90e70328...zip`](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-2K/blob/e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c/4K/90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947.zip)
 at revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c`.
 
-## Authorized source download
+## AMD Radeon / ROCm path
+
+The reproduced environment is AMD Radeon PRO W7900D (`gfx1100`) with
+PyTorch ROCm and OpenSplat commit
+`9fb62fde8b7b8c416121d3cbdcda278ffd9682f7`.
+
+Install the Python-side data and validation dependencies into the same ROCm
+environment that provides PyTorch:
 
 ```bash
 python -m pip install -r reconstruction/requirements-core.txt
+
+git clone https://github.com/pierotofy/OpenSplat.git /root/OpenSplat
+git -C /root/OpenSplat checkout --detach \
+  9fb62fde8b7b8c416121d3cbdcda278ffd9682f7
+
+export ROCM_VENV=/root/opensplat-env
+export OPENSPLAT_SOURCE=/root/OpenSplat
+make build-opensplat
+```
+
+The build helper applies only the two checked-in HIP portability patches,
+targets `gfx1100`, and refuses any other OpenSplat commit.
+
+Download and verify the gated source locally:
+
+```bash
 hf auth login
+python -m pip install -r reconstruction/requirements-core.txt
 make download-reference-data
 ```
 
-The downloader validates revision, file size, SHA-256, ZIP CRC, source images
-and camera metadata. Credentials remain in the local Hugging Face store.
+Then load the example environment and run the complete AMD path:
 
-## Reconstruction
+```bash
+cp reconstruction/config/rocm.env.example .rocm.env
+set -a && source .rocm.env && set +a
+make reconstruct-rocm
+```
+
+The entrypoint verifies the exact source bytes, runs a live AMD tensor probe,
+trains and renders a held-out view, normalizes OpenSplat quaternions, removes
+robust-radius outliers invisible from every supplied camera and obvious
+high-alpha projected streaks, validates the cleaned PLY, and exports the
+collision-free room-shell layers. A run is accepted only when its
+machine-readable receipt is
+`amd_rocm_reproduction_passed`.
+
+## A800 reference path
+
+The A800 reference remains:
 
 ```bash
 export SOURCE_ARCHIVE="$PWD/data/private/dl3dv-kitchen/90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947.zip"
@@ -38,9 +73,8 @@ export WORK_ROOT=/workspace/runs/dl3dv-commercial-kitchen-a800
 reconstruction/bin/reconstruct.sh
 ```
 
-The canonical outputs and exact hashes are published in the
-[manually gated shell repository](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell)
-and locked in `data/manifests/a800-reconstruction.public.json`.
+Its exact published hashes are locked in
+`data/manifests/a800-reconstruction.public.json`.
 
 ## CPU contract test
 
@@ -48,7 +82,5 @@ and locked in `data/manifests/a800-reconstruction.public.json`.
 make smoke-reconstruction
 ```
 
-This verifies the exporter and non-physics visual-shell contract with a tiny
-license-free synthetic fixture. It does not establish GPU reconstruction or
-human visual acceptance. The canonical package remains
-`technical_pass_visual_approval_pending`.
+This license-free test verifies the exporter and zero-background-physics
+contract. It does not substitute for either GPU run.

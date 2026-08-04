@@ -58,6 +58,35 @@ assert dataset["dataset_id"] == "bigym-3dgs-light-floor-replay-plan-v2-20260802"
 assert dataset["summary"]["episodes"] == 32
 assert dataset["summary"]["video_files"] == 3
 assert dataset["status"] == "technical_pass_visual_approval_pending"
+assert dataset["runtime"] == "A800 CUDA"
+a800 = json.loads(Path("evidence/a800-reference-validation-summary.json").read_text())
+assert a800["role"] == "a800_reference_for_amd_main"
+assert a800["branch"] == "a800"
+assert a800["status"] == "a800_technical_pass_visual_approval_pending"
+amd = json.loads(Path("evidence/amd-rocm-main-status.json").read_text())
+assert amd["branch"] == "main"
+assert amd["role"] == "amd_rocm_implementation"
+assert amd["status"] == "amd_rocm_reproduction_passed"
+assert amd["quality_status"] == "clear_heldout_pass_strict_photo_grade_target_not_met"
+assert amd["target"]["vendor"] == "AMD"
+assert amd["target"]["architecture"] == "gfx1100"
+assert amd["target"]["device"] == "AMD Radeon PRO W7900D"
+assert amd["canonical_inputs"]["images"] == 352
+assert amd["reconstruction"]["steps"] == 15000
+assert amd["reconstruction"]["cleaned_gaussians"] == 1458354
+assert amd["reconstruction"]["cleanup"]["projected_streaks_removed"] == 11027
+assert amd["reconstruction"]["heldout"]["psnr"] >= 27.5
+assert amd["reconstruction"]["heldout"]["ssim"] >= 0.93
+assert all(amd["technical_gates"].values())
+assert not any(amd["strict_photo_grade_gates"].values())
+assert amd["artifacts"]["cleaned_ply"]["sha256"] == "d49bcf7219f63a92ee0d40f8d86e618176892ec89853fecc5e217829bff42b9b"
+assert "canonical_32_episode_package_reproduced_on_amd" in amd["not_claimed"]
+preview = Path("docs/images/cutlery-cam-high-preview.gif")
+assert preview.read_bytes()[:6] in {b"GIF87a", b"GIF89a"}
+assert 1_000_000 < preview.stat().st_size < 10_000_000
+amd_preview = Path("docs/images/amd-rocm-heldout-vs-reference.png")
+assert amd_preview.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+assert 1_000_000 < amd_preview.stat().st_size < 10_000_000
 print("DATA_CONTRACT_OK")
 PY
 

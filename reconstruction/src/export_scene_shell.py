@@ -173,16 +173,21 @@ def align_vector(left: np.ndarray, right: np.ndarray) -> np.ndarray:
 def load_cameras(path: Path) -> np.ndarray:
     payload = json.loads(path.read_text(encoding="utf-8"))
     matrices = payload.get("camtoworlds")
+    raw_nerfstudio_frames = False
     if matrices is None and "frames" in payload and isinstance(payload["frames"], list):
         matrices = [
             frame.get("transform_matrix") or frame.get("camtoworld")
             for frame in payload["frames"]
         ]
+        raw_nerfstudio_frames = True
     cameras = np.asarray(matrices, dtype=np.float64)
     if cameras.ndim != 3 or cameras.shape[1:] != (4, 4):
         raise RuntimeError(f"invalid camera path shape: {cameras.shape}")
     if len(cameras) < 8 or not np.isfinite(cameras).all():
         raise RuntimeError("camera path is insufficient or non-finite")
+    if raw_nerfstudio_frames:
+        cameras = cameras.copy()
+        cameras[:, :3, 1:3] *= -1.0
     return cameras
 
 
@@ -428,7 +433,10 @@ def main() -> None:
     floor_perimeter = floor & ~semantic_remove
     if not source_center_clean:
         floor_perimeter &= ~inside_workspace_xy
-    ceiling_lights = ceiling & ~semantic_remove
+    # A few low ceiling-classified splats can overlap the task clearance when
+    # the inferred room height is compact. Keep the central robot volume
+    # strictly empty instead of allowing those ambiguous records through.
+    ceiling_lights = ceiling & ~semantic_remove & ~inside_center
     shell = floor_perimeter | ceiling_lights | walls_decor
 
     args.output.mkdir(parents=True, exist_ok=True)
@@ -475,15 +483,28 @@ def main() -> None:
     }
     if args.source_report:
         report = json.loads(args.source_report.read_text(encoding="utf-8"))
+        archive_report = report.get("archive")
+        if isinstance(archive_report, dict):
+            archive_report = {
+                key: archive_report.get(key)
+                for key in (
+                    "bytes",
+                    "sha256",
+                    "expected_bytes",
+                    "expected_sha256",
+                    "zip_crc_passed",
+                )
+                if archive_report.get(key) is not None
+            }
         source_metadata = {
-            "dataset": report.get("dataset", "unspecified"),
+            "dataset": report.get("dataset") or report.get("repo_id") or "unspecified",
             "scene": report.get("scene"),
             "scene_hash": report.get("scene_hash"),
             "category": report.get("category"),
             "revision": report.get("revision"),
             "url": report.get("source"),
             "license": report.get("license"),
-            "archive": report.get("archive"),
+            "archive": archive_report,
         }
     profile = {
         "schema_version": 1,

@@ -1,97 +1,154 @@
-# BiGym + DL3DV 3DGS 标准厨房数据
+# AMD Radeon BiGym + 3DGS 厨房环境
 
-[English](README.md) | [中文](README.zh-CN.md)
+[English](README.md) | [中文](README.zh-CN.md) ·
+[AMD/ROCm `main`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/main) ·
+[A800/CUDA `a800`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800)
 
-本仓库保存唯一标准采集包对应的代码、配置和公开数据契约。当前分支所有
-配置、manifest 和文档只允许指向下面这一组数据与房间壳：
+这是面向 AMD Radeon/ROCm 的主分支，用于在 BiGym
+`DishwasherUnloadCutleryLong` 中加载纯视觉 3D Gaussian Splatting 厨房壳，
+完成回放、采集和校验。已经验证的 NVIDIA A800/CUDA 参考版本原样保存在
+[`a800` 分支](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800)。
 
-- 数据：`bigym-3dgs-light-floor-replay-plan-v2-20260802/dishwasher_unload_cutlery_long`；
-- 房间壳：DL3DV 商用厨房场景
-  `90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947`。
+两个分支只认同一份标准数据和 shell，已废弃的场景与采集身份不再支持。
 
-所有已废弃的场景和采集身份均已从当前分支移除。
+## 标准素材预览
 
-## 标准发布地址
+| 对齐后的 3DGS 房间壳 | 上游轨迹抽样视图 |
+| --- | --- |
+| ![浅色地面商业厨房 3DGS 房间壳](docs/images/canonical-shell-preview.png) | ![DL3DV 商业厨房源轨迹联系表](docs/images/canonical-source-contact-sheet.jpg) |
+
+![标准 cam_high 合并回放视频的六秒片段](docs/images/cutlery-cam-high-preview.gif)
+
+GIF 来自已经校验的 `cam_high` 合并视频，仅作为仓库内可直接查看的素材证据，
+不能替代受控下载的完整视频，也不能替代三相机人工视觉验收。
+
+### AMD Radeon 实机复现
+
+![DL3DV 留出原图与 AMD ROCm 15000-step 重建渲染对比](docs/images/amd-rocm-heldout-vs-reference.png)
+
+左侧是 `1920x1080` 留出原图，右侧是 AMD Radeon PRO W7900D 上
+OpenSplat/HIP 训练 15,000 steps 的渲染结果。清晰预览门禁以 PSNR
+`27.9066`、SSIM `0.9370` 通过；导出 shell 前已去除明显投影拉丝点和
+1 个所有相机均不可见的空间离群点。
+
+## 分支与证据边界
+
+| 分支或产物 | 硬件阶段 | 当前结论 |
+| --- | --- | --- |
+| `main` | AMD Radeon PRO W7900D `gfx1100`、ROCm/HIP | 352 张标准图像的重建已实机复现；清理后 PLY、清晰留出渲染和零碰撞房间壳门禁通过 |
+| `a800` | NVIDIA A800、CUDA 12.8 | 已锁定参考版本：房间壳重建和 32 条采集通过技术校验 |
+| Hugging Face 数据 | 由 A800 生成 | 32 个 episode、3 个合并相机视频；视觉状态为 `awaiting_visual_approval` |
+| Hugging Face shell | A800 `main` + AMD 独立分支 | 保留 A800 参考，在独立 HF 分支发布 AMD PLY、分层、alignment、回执和预览 |
+
+标准房间重建现在已在 Radeon 上实机复现。但这**不代表** A800 的
+32 条采集已经在 AMD 上重放：后续采集验收仍要通过原生 gsplat
+rasterization、严格三相机回放、全视频解码和独立人工视觉检查。
+
+机器可读状态见
+[`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json)，
+A800 基线见
+[`evidence/a800-reference-validation-summary.json`](evidence/a800-reference-validation-summary.json)。
+
+## 唯一标准输入
 
 | 内容 | 唯一标准 |
 | --- | --- |
-| LeRobot v3 数据 | [eustance/openSource_AMD_AI_DevMaster_Hackathon_202608](https://huggingface.co/datasets/eustance/openSource_AMD_AI_DevMaster_Hackathon_202608) |
+| LeRobot v3 参考数据 | [eustance/openSource_AMD_AI_DevMaster_Hackathon_202608](https://huggingface.co/datasets/eustance/openSource_AMD_AI_DevMaster_Hackathon_202608) |
 | 数据路径 | `bigym-3dgs-light-floor-replay-plan-v2-20260802/dishwasher_unload_cutlery_long` |
 | 3DGS 房间壳 | [eustance/amd-bigym-3dgs-kitchen-shell](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell) |
-| 上游来源 | [DL3DV/DL3DV-ALL-2K](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-2K)，revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c` |
-| 采集运行环境 | NVIDIA A800 / CUDA |
-| 视觉状态 | `awaiting_visual_approval` |
+| DL3DV 来源 | [DL3DV/DL3DV-ALL-2K](https://huggingface.co/datasets/DL3DV/DL3DV-ALL-2K)，revision `e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c` |
+| Scene hash | `90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947` |
+| 合并 shell | 862,104 个 Gaussian，SHA-256 `086f1f5757523db94349de16707806e74a65bac35b24d9e4e7437639164738a7` |
+| AMD 清理后重建 | 1,458,354 个 Gaussian，SHA-256 `d49bcf7219f63a92ee0d40f8d86e618176892ec89853fecc5e217829bff42b9b` |
+| AMD shell 完整包 | [HF 分支 `amd-rocm-w7900d-20260804`](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell/tree/amd-rocm-w7900d-20260804) |
 
-由于 DL3DV 的现行条款和非商业限制，两个 Hugging Face 仓库均为人工审批下载。
+由于标准素材继续受 DL3DV 和其他上游条款约束，两个 Hugging Face 仓库保持
+人工审批下载。
 
-## 数据验收结果
+## AMD/ROCm 快速开始
 
-- 任务：`DishwasherUnloadCutleryLong`；
-- 32 条不同且保存时 `reward=1.0` 的 episode，索引 `0..31`；
-- 共 21,018 帧，20 fps；
-- state/action 均为 16 维有限 `float32`；
-- 一个合并后的数据 Parquet、一个包含 32 行的 episode 元数据 Parquet；
-- 三个合并后的 H.264 视频：`cam_high`、`cam_left_wrist`、`cam_right_wrist`；
-- 三个视频均为 21,018 帧，并已通过完整解码。
+目标环境：
 
-这份数据通过了结构和技术校验，但尚未取得人工视觉验收，不应写成“视觉合格的
-正式训练集”。精确文件哈希见
-[`data/manifests/cutlery32-dataset.public.json`](data/manifests/cutlery32-dataset.public.json)。
+- 能报告 `gfx1100` 的 AMD Radeon GPU；
+- AMD Radeon `gfx1100` 上的 ROCm PyTorch；
+- 重建使用 OpenSplat commit
+  `9fb62fde8b7b8c416121d3cbdcda278ffd9682f7`；
+- 下游运行时渲染使用 Python 3.12、MuJoCo 3.10、BiGym 4.1 和
+  gsplat 1.4。
 
-## 房间壳验收结果
+先构建 OpenSplat 原生 HIP trainer，下载精确锁定的受控源包，然后运行 AMD
+端到端重建：
 
-标准房间壳使用 gsplat MCMC scheduled-r20，训练 60,000 step，seed 42，
-Gaussian 上限 2,000,000。合并后的壳包含 862,104 个 Gaussian：
+```bash
+git clone https://github.com/pierotofy/OpenSplat.git /root/OpenSplat
+git -C /root/OpenSplat checkout --detach \
+  9fb62fde8b7b8c416121d3cbdcda278ffd9682f7
+export OPENSPLAT_SOURCE=/root/OpenSplat
+make build-opensplat
 
-```text
-gaussians_shell.ply
-SHA-256 086f1f5757523db94349de16707806e74a65bac35b24d9e4e7437639164738a7
+hf auth login
+make download-reference-data
+cp reconstruction/config/rocm.env.example .rocm.env
+set -a && source .rocm.env && set +a
+make reconstruct-rocm
 ```
 
-墙、地面、顶灯、合并壳和 alignment 的精确哈希见
-[`data/manifests/a800-reconstruction.public.json`](data/manifests/a800-reconstruction.public.json)。
-PLY 和 alignment 与采集回执逐字节一致。发布的 profile 是根据保留下来的校准
-profile 和相同浅色公制地面参数重新生成的，语义一致，但不应声称与已丢失的
-A800 临时 profile 逐字节相同。
+只有回执状态为 `amd_rocm_reproduction_passed` 才算重建通过；精确门禁见
+[`reconstruction/README.md`](reconstruction/README.md)。
 
-## 下载
-
-先使用已获两个受控仓库权限的 Hugging Face 账号登录：
+下载受控的标准 shell，根据
+[`data/manifests/a800-reconstruction.public.json`](data/manifests/a800-reconstruction.public.json)
+核对哈希，然后生成 AMD 运行目录：
 
 ```bash
 hf auth login
 hf download eustance/amd-bigym-3dgs-kitchen-shell \
   --repo-type dataset --local-dir data/private/canonical-shell
-hf download eustance/openSource_AMD_AI_DevMaster_Hackathon_202608 \
-  --repo-type dataset \
-  --include 'bigym-3dgs-light-floor-replay-plan-v2-20260802/**' \
-  --local-dir data/private/canonical-cutlery32
+
+export SHELL_WALLS="$PWD/data/private/canonical-shell/walls_fixed_kitchen.ply"
+export SHELL_FLOOR="$PWD/data/private/canonical-shell/floor_perimeter.ply"
+export SHELL_CEILING="$PWD/data/private/canonical-shell/ceiling_lights.ply"
+export SHELL_DIR="$PWD/data/private/amd-runtime-shell"
+make stage-shell
 ```
 
-训练或评测前请用两个公开 manifest 对下载文件做 SHA-256 校验。
+只有原生 AMD 渲染门禁通过后，才能运行 32 条标准 replay plan：
 
-## 关键代码
+```bash
+export REPLAY_PLAN=/absolute/path/to/cutlery32-replay-plan.json
+export DATASET_ROOT=/absolute/path/to/amd-cutlery32
+make collect
+make validate
+```
 
-- [`reconstruction/`](reconstruction/README.md)：授权下载、重建、导出和校验；
-- [`configs/dl3dv-kitchen-cutlery32-profile.json`](configs/dl3dv-kitchen-cutlery32-profile.json)：
-  唯一标准 profile；
-- [`scripts/run_cutlery32.sh`](scripts/run_cutlery32.sh)：正式采集入口；
-- [`scripts/validate_lerobot_v3_collection.py`](scripts/validate_lerobot_v3_collection.py)：
-  LeRobot 结构和完整视频校验；
-- [`docs/data-license.md`](docs/data-license.md)：许可和再分发边界。
+回放失败必须继续排除；已发布的 AMD 重建回执不会将独立的
+32 条回放阶段误标为通过。
 
-AMD ROCm 脚本仍作为同一工作负载的移植路径保留，但不会改变 A800 采集数据和
-房间壳的唯一身份。
+## 已实现内容
 
-## 本地校验
+- 不修改 `/opt/rocm` 的隔离编译器 wrapper；
+- 在 `gfx1100` 上锁定 OpenSplat 原生 HIP 重建；
+- held-out PSNR/SSIM 与保守的全相机不可见异常点清理；
+- `gsplat==1.4.0` `gfx1100` 兼容补丁和真实 rasterization smoke；
+- 不增加 MuJoCo 物理对象的 BiGym 纯视觉 shell 合成；
+- 禁止 fallback 的 head、左右腕部三相机严格渲染；
+- 不同 demonstration 的 replay plan 校验；
+- LeRobot v3 结构、有限数值和全视频解码校验；
+- CI 使用的无数据许可 CPU 合成重建 smoke。
+
+ROCm 构建边界见 [`docs/02-rocm-gsplat.md`](docs/02-rocm-gsplat.md)，坐标与
+合成路径见 [`docs/01-end-to-end.md`](docs/01-end-to-end.md)。
+
+## 仓库校验
 
 ```bash
 make verify
 make smoke-reconstruction
+python scripts/check_markdown_links.py
 ```
 
-Git 仓不保存源 ZIP、完整 PLY 或完整采集包；它们只存放在人工审批的 Hugging
-Face 仓库中。
+GitHub CI 会检查公开文件哈希、JSON 契约、两个补丁、Markdown 链接和无许可依赖
+的 shell exporter；真实 Radeon GPU 结果另有机器可读回执和不可变哈希。
 
 ## 许可
 

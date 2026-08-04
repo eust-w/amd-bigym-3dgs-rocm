@@ -19,3 +19,8 @@ Users must independently obtain access to
 and accept its current terms.
 
 Private downloads belong under `data/private/`, which Git ignores.
+
+On `main`, these files are immutable A800-origin reference inputs for the AMD
+ROCm implementation. The exact verified A800 repository state is preserved on
+the `a800` branch. A new AMD run must emit its own receipt and must not rewrite
+the origin runtime in these manifests.

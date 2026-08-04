@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON ?= python3
 
-.PHONY: preflight install-bigym build-gsplat smoke-gsplat download-reference-data reconstruct smoke-reconstruction stage-shell collect validate clean verify
+.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify
 
 preflight:
 	./scripts/preflight_rocm.sh
@@ -12,6 +12,10 @@ install-bigym:
 build-gsplat:
 	./scripts/build_gsplat_rocm.sh
 
+build-opensplat:
+	./reconstruction/bin/build_rocm_opensplat_gfx1100.sh \
+		"$${OPENSPLAT_SOURCE:?set OPENSPLAT_SOURCE}"
+
 smoke-gsplat:
 	"$${VENV:?set VENV}/bin/python" scripts/smoke_test_gsplat.py
 
@@ -20,6 +24,9 @@ download-reference-data:
 
 reconstruct:
 	./reconstruction/bin/reconstruct.sh
+
+reconstruct-rocm:
+	./reconstruction/bin/reconstruct_rocm.sh
 
 smoke-reconstruction:
 	@set -e; \
