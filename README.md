@@ -6,7 +6,7 @@
 This is the AMD Radeon/ROCm implementation for reconstructing, loading and
 validating the visual-only 3D Gaussian Splatting kitchen shell used by BiGym
 `DishwasherUnloadCutleryLong`. The reconstruction and downloadable shell named
-below were produced on AMD Radeon PRO W7900D, not copied from a CUDA run.
+below were produced on AMD Radeon PRO W7900D.
 
 ## Reproduced on AMD Radeon
 
@@ -48,11 +48,8 @@ the separate 32-episode collection has also been replayed on AMD: downstream
 acceptance still requires native gsplat rasterization, strict three-camera
 replay, full-video decode and separate human visual review.
 
-Machine-readable status is recorded in
-[`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json). The
-previous CUDA implementation is archived separately on the
-[`a800` branch](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800); it is
-not the download target used by this README.
+Machine-readable AMD status is recorded in
+[`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json).
 
 ## Canonical inputs
 

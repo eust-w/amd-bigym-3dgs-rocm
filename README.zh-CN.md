@@ -5,8 +5,7 @@
 
 这是 AMD Radeon/ROCm 主实现，用于重建、加载和校验 BiGym
 `DishwasherUnloadCutleryLong` 使用的纯视觉 3D Gaussian Splatting 厨房壳。
-下面的重建结果和可下载 shell 均由 AMD Radeon PRO W7900D 生成，
-不是从 CUDA 运行复制的产物。
+下面的重建结果和可下载 shell 均由 AMD Radeon PRO W7900D 生成。
 
 ## AMD Radeon 实机复现
 
@@ -45,10 +44,8 @@ OpenSplat/HIP 训练 15,000 steps 的渲染结果。清晰预览门禁以 PSNR
 32 条采集已经在 AMD 上重放：后续采集验收仍要通过原生 gsplat
 rasterization、严格三相机回放、全视频解码和独立人工视觉检查。
 
-机器可读状态见
-[`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json)，
-上一个 CUDA 实现单独归档在
-[`a800` 分支](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/a800)，不是本 README 的下载目标。
+AMD 机器可读状态见
+[`evidence/amd-rocm-main-status.json`](evidence/amd-rocm-main-status.json)。
 
 ## 唯一标准输入
 
