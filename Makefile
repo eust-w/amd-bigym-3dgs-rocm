@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON ?= python3
 
-.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify verify-evaluation
+.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify verify-evaluation verify-pipeline eval-preflight eval-bootstrap eval-download-shell eval-probe eval-smoke eval-formal
 
 preflight:
 	./scripts/preflight_rocm.sh
@@ -59,4 +59,25 @@ verify:
 	./scripts/verify_public_repo.sh
 
 verify-evaluation:
-	./evaluation/openpi-jax-bigym/bin/verify.sh
+	./evaluation/bigym-3dgs/bin/verify.sh
+
+verify-pipeline: verify-evaluation
+
+eval-preflight:
+	./evaluation/bigym-3dgs/bin/preflight_amd.sh
+
+eval-bootstrap:
+	./evaluation/bigym-3dgs/bin/bootstrap_bigym_source.sh
+	./evaluation/bigym-3dgs/bin/bootstrap_bigym_runtime.sh
+
+eval-download-shell:
+	./evaluation/bigym-3dgs/bin/download_shell.sh
+
+eval-probe:
+	./evaluation/bigym-3dgs/bin/probe_inference.sh
+
+eval-smoke:
+	./evaluation/bigym-3dgs/bin/run_eval.sh smoke
+
+eval-formal:
+	./evaluation/bigym-3dgs/bin/run_eval.sh formal

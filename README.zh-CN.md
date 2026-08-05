@@ -1,6 +1,6 @@
 <div align="center">
   <h1>AMD Radeon BiGym + 3DGS 厨房环境</h1>
-  <p><strong>面向 BiGym/MuJoCo 的 ROCm 原生 3D Gaussian 重建与可视化房间壳集成</strong></p>
+  <p><strong>从 DL3DV 厨房重建到可替换策略的 AMD ROCm 闭环评测</strong></p>
   <p>
     <a href="https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/eust-w/amd-bigym-3dgs-rocm/ci.yml?branch=main&amp;style=flat-square&amp;label=CI" alt="CI 状态"></a>
     <a href="evidence/amd-rocm-main-status.json"><img src="https://img.shields.io/badge/Reproduction-passed-22C55E?style=flat-square" alt="AMD 复现通过"></a>
@@ -21,8 +21,8 @@
   <p><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a></p>
 </div>
 
-这是 AMD Radeon/ROCm 主实现，用于重建、加载和校验 BiGym
-`DishwasherUnloadCutleryLong` 使用的纯视觉 3D Gaussian Splatting 厨房壳。
+这是 AMD Radeon/ROCm 端到端主实现：重建 DL3DV 厨房、在 BiGym 中加载
+3D Gaussian 房间壳、连接外部策略进行闭环评测、录制三相机并校验完整轨迹。
 下面的重建结果和可下载 shell 均由 AMD Radeon PRO W7900D 生成。
 
 ## BiGym + 3DGS 运行演示
@@ -155,6 +155,8 @@ make validate
 - `gsplat==1.4.0` `gfx1100` 兼容补丁和真实 rasterization smoke；
 - 不增加 MuJoCo 物理对象的 BiGym 纯视觉 shell 合成；
 - 禁止 fallback 的 head、左右腕部三相机严格渲染；
+- 外部推理 HTTP v2 客户端契约；本分支不包含模型运行时或权重；
+- 闭环评测、三相机同步 MP4、追加式轨迹与原子 manifest；
 - 不同 demonstration 的 replay plan 校验；
 - LeRobot v3 结构、有限数值和全视频解码校验；
 - CI 使用的无数据许可 CPU 合成重建 smoke。
@@ -162,18 +164,56 @@ make validate
 ROCm 构建边界见 [`docs/02-rocm-gsplat.md`](docs/02-rocm-gsplat.md)，坐标与
 合成路径见 [`docs/01-end-to-end.md`](docs/01-end-to-end.md)。
 
+## 端到端闭环评测
+
+主仓库已经打通重建、房间壳、外部推理、BiGym 闭环、三相机录像、轨迹和结果校验：
+
+```text
+DL3DV -> OpenSplat/HIP -> AMD 3DGS 房间壳 -> BiGym/MuJoCo
+                                                   ^
+外部推理服务 -> HTTP protocol v2 ------------------+
+                                                   |
+                           MP4 + JSONL + manifest + 校验
+```
+
+先准备仿真侧，并指向仓库外部的推理服务：
+
+```bash
+export AMD_PIPELINE_ROOT=/workspace/amd-bigym-3dgs-rocm
+export INFERENCE_PROVIDER=external
+export INFERENCE_BASE_URL=http://127.0.0.1:7891
+export INFERENCE_GPU=0
+export SIM_GPU=0
+
+make eval-preflight
+make eval-bootstrap
+make eval-download-shell
+```
+
+在本分支之外启动兼容服务后，依次运行 `make eval-probe`、`make eval-smoke` 和
+`make eval-formal`。客户端协议见
+[`evaluation/bigym-3dgs/INFERENCE_PROTOCOL.md`](evaluation/bigym-3dgs/INFERENCE_PROTOCOL.md)。
+原先随仓库提供的推理实现完整保留在
+[`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence)
+分支。
+
 ## 仓库校验
 
-锁定 OpenPI JAX 权重的策略评测链路单独放在
-[`evaluation/openpi-jax-bigym/`](evaluation/openpi-jax-bigym/README.md)。它用
-JAX 推理服务与 PyTorch/gsplat BiGym 渲染器隔离为两个 ROCm 进程；支持单卡
-共享或双卡分离，先跑 3 条 smoke，再以 32 个不同 seed 正式评测
+仿真评测主线现在与模型无关，位于
+[`evaluation/bigym-3dgs/`](evaluation/bigym-3dgs/README.zh-CN.md)。这里只保留外部
+服务客户端、协议探针、BiGym 闭环、录像和校验器；本分支不跟踪模型服务器、推理
+框架、权重或下载器。任意兼容服务均可通过 `INFERENCE_BASE_URL` 接入，不需要修改
+录像与校验代码，且运行时仍与 PyTorch/gsplat 仿真器保持为独立进程。
+可复用的上游 BiGym 改进状态单独记录在
+[`docs/upstream-contributions.md`](docs/upstream-contributions.md)。
+
+默认先跑 3 条 smoke，再以 32 个不同 seed 正式评测
 `DishwasherUnloadCutleryLong`。评测器也支持任意正整数条数；32 条是可横向比较的
 正式 benchmark 口径，不是代码限制。
 
 新版评测器会把每次 reset 和 transition 立即写入追加式 JSONL，并同步录制 head、
 left wrist、right wrist 三路 MP4；状态、模型动作、环境动作、裁剪动作与 mask、
-reward、成功/终止标记、info、请求 ID，以及客户端与服务端 JAX 推理耗时都会保留。
+reward、成功/终止标记、info、请求 ID，以及客户端与服务端推理耗时都会保留。
 每个 transition 都会显式标明动作前/后的 16 维状态、MuJoCo 时间，以及动作前后
 画面所在的记录序号，避免把下一帧错配为当前动作输入。每条 episode 有原子
 manifest、代码/权重身份、视频元数据和 SHA-256。任务失败轨迹不会被丢弃或冒充

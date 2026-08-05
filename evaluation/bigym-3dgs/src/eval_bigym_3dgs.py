@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Strict BiGym + AMD 3DGS closed-loop evaluator for the OpenPI HTTP adapter."""
+"""Strict BiGym + AMD 3DGS evaluator for a versioned inference HTTP adapter."""
 
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def latency_summary(values: list[float]) -> dict[str, float | None]:
 
 
 def policy_health(base_url: str) -> dict[str, Any]:
-    """Freeze the active policy service identity into the run contract."""
+    """Freeze a provider-neutral inference-service identity into the run."""
 
     response = requests.get(base_url.rstrip("/") + "/health", timeout=30)
     response.raise_for_status()
@@ -88,13 +88,11 @@ def policy_health(base_url: str) -> dict[str, Any]:
     if (
         not isinstance(payload, dict)
         or payload.get("status") != "ok"
-        or payload.get("backend") != "jax-rocm"
-        or payload.get("adapter") != "pillow-single-thread-timing-v2"
         or payload.get("protocol_version") != 2
         or not isinstance(identity, dict)
-        or not identity.get("checkpoint_revision")
-        or not identity.get("checkpoint_metadata_sha256")
-        or not identity.get("openpi_revision")
+        or not identity.get("provider")
+        or not identity.get("model_id")
+        or not identity.get("model_revision")
         or not identity.get("adapter_source_sha256")
     ):
         raise RuntimeError(f"policy health response is not ready: {payload!r}")
@@ -311,7 +309,7 @@ def main() -> None:
     parser.add_argument("--n-episodes", type=int, required=True)
     parser.add_argument("--seed0", type=int, default=0)
     parser.add_argument("--max-steps", type=int)
-    parser.add_argument("--tag", default="amd-jax")
+    parser.add_argument("--tag", default="amd-external-inference")
     parser.add_argument("--run-id")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument(
@@ -341,7 +339,9 @@ def main() -> None:
 
     task = resolve_task(args.task)
     if task != "DishwasherUnloadCutleryLong":
-        raise SystemExit("this pinned checkpoint is only accepted for DishwasherUnloadCutleryLong")
+        raise SystemExit(
+            "this evaluation profile currently supports only DishwasherUnloadCutleryLong"
+        )
     prompt = TASKS[task]["prompt"]
     max_steps = args.max_steps if args.max_steps is not None else get_maxstep(task)
     task_dir = args.output_dir.resolve() / task_to_snake(task)

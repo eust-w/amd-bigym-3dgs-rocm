@@ -116,13 +116,13 @@ class EvaluatorIntegrationTests(unittest.TestCase):
             evaluator.install_prebuilt_gsplat_backend = lambda: None
             evaluator.policy_health = lambda _base_url: {
                 "status": "ok",
-                "backend": "jax-rocm",
-                "adapter": "pillow-single-thread-timing-v2",
+                "backend": "external-test",
+                "adapter": "fixture-http-v2",
                 "protocol_version": 2,
                 "policy_identity": {
-                    "checkpoint_revision": "fixture-checkpoint",
-                    "checkpoint_metadata_sha256": "a" * 64,
-                    "openpi_revision": "fixture-openpi",
+                    "provider": "fixture-provider",
+                    "model_id": "fixture/model",
+                    "model_revision": "fixture-model",
                     "adapter_source_sha256": "b" * 64,
                 },
             }

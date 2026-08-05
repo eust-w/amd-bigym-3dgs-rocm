@@ -2,9 +2,9 @@
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
-test -d "$BIGYM_DIR/.git" || fail "run bootstrap_sources.sh first"
+test -d "$BIGYM_DIR/.git" || fail "run bootstrap_bigym_source.sh first"
 
-BIGYM_VENV=${VENV:-$AMD_EVAL_ROOT/bigym-venv}
+BIGYM_VENV=${VENV:-$AMD_PIPELINE_ROOT/bigym-venv}
 BASE_PYTHON=${BASE_PYTHON:-python3.12}
 require_command "$BASE_PYTHON"
 

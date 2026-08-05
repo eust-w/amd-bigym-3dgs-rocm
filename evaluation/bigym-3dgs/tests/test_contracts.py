@@ -22,7 +22,7 @@ class ContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.lock = json.loads((ROOT / "VERSION_LOCK.json").read_text())
-        cls.probe = load_module("probe_policy", ROOT / "src" / "probe_policy.py")
+        cls.probe = load_module("probe_inference", ROOT / "src" / "probe_inference.py")
         cls.summary = load_module("summarize_results", ROOT / "src" / "summarize_results.py")
         cls.calibration = load_module(
             "calibrate_amd_shell", ROOT / "src" / "calibrate_amd_shell.py"
@@ -54,13 +54,13 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(payload["frames"], 1)
             self.assertGreater(payload["fovy_degrees_median"], 1.0)
 
-    def test_pinned_policy_contract(self) -> None:
-        contract = self.lock["policy_contract"]
+    def test_provider_neutral_inference_contract(self) -> None:
+        contract = self.lock["inference_protocol"]
+        self.assertEqual(contract["protocol_version"], 2)
         self.assertEqual(contract["action_dim"], 16)
-        self.assertEqual(contract["model_action_dim"], 32)
         self.assertEqual(contract["action_horizon"], 10)
-        self.assertEqual(contract["camera_names"], ["high", "l_wrist", "r_wrist"])
-        self.assertTrue(contract["lora"])
+        self.assertEqual(contract["state_dim"], 16)
+        self.assertEqual(contract["camera_names"], ["head", "left_wrist", "right_wrist"])
 
     def test_formal_benchmark_is_32_distinct_seeds(self) -> None:
         benchmark = self.lock["benchmark"]
@@ -80,6 +80,14 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(payload[12:16], b"IHDR")
         width, height = struct.unpack(">II", payload[16:24])
         self.assertEqual((width, height), (12, 9))
+
+    def test_probe_enforces_v2_identity_and_timing(self) -> None:
+        source = (ROOT / "src" / "probe_inference.py").read_text()
+        self.assertIn('"provider"', source)
+        self.assertIn('"model_id"', source)
+        self.assertIn('"model_revision"', source)
+        self.assertIn("request_id", source)
+        self.assertIn("server_total_before_final_serialize", source)
 
     def test_summary_preserves_failures(self) -> None:
         results = {
@@ -147,21 +155,12 @@ class ContractTests(unittest.TestCase):
         summary = self.summary.summarize(results, 32)
         self.assertEqual(summary["status"], "evaluation_failed")
 
-    def test_amd_policy_runtime_isolated_from_rocm_torch(self) -> None:
-        bootstrap = (ROOT / "bin" / "bootstrap_openpi_venv.sh").read_text()
-        server = (ROOT / "bin" / "serve_policy.sh").read_text()
-        self.assertIn("torch.version.hip is not None", bootstrap)
-        self.assertIn('exec "$POLICY_PYTHON"', server)
-        self.assertNotIn("conda run", server)
-
-    def test_amd_adapter_avoids_opencv_and_threaded_flask(self) -> None:
-        adapter = (ROOT / "src" / "inference_server_bigym_amd.py").read_text()
-        self.assertNotIn("import cv2", adapter)
-        self.assertIn("threaded=False", adapter)
-        self.assertIn("Image.open", adapter)
-        self.assertIn('"request_id"', adapter)
-        self.assertIn('"policy_infer"', adapter)
-        self.assertIn('"server_total_before_final_serialize"', adapter)
+    def test_evaluator_accepts_any_v2_provider_identity(self) -> None:
+        evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()
+        self.assertIn('identity.get("provider")', evaluator)
+        self.assertIn('identity.get("model_id")', evaluator)
+        self.assertIn('identity.get("model_revision")', evaluator)
+        self.assertIn('identity.get("adapter_source_sha256")', evaluator)
 
     def test_evaluator_can_reuse_verified_prebuilt_hip_gsplat(self) -> None:
         evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()
@@ -187,6 +186,8 @@ class ContractTests(unittest.TestCase):
         )
         self.assertIn("--recording-validation", runner)
         self.assertIn("REQUIRED_TRANSITION_FIELDS", validator)
+        self.assertIn("INFERENCE_BASE_URL", runner)
+        self.assertIn("INFERENCE_PROVIDER", runner)
 
 
 if __name__ == "__main__":
