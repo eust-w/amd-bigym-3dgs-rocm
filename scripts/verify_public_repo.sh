@@ -4,11 +4,15 @@ set -euo pipefail
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$REPO_ROOT"
 
-for script in scripts/*.sh reconstruction/bin/*.sh reconstruction/reference/*.sh evaluation/openpi-jax-bigym/bin/*.sh; do
+for script in scripts/*.sh reconstruction/bin/*.sh reconstruction/reference/*.sh \
+  evaluation/bigym-3dgs/bin/*.sh evaluation/openpi-jax-bigym/bin/*.sh \
+  inference/third_party/openpi-jax/bin/*.sh; do
   bash -n "$script"
 done
 
-python3 -m compileall -q scripts reconstruction/src evaluation/openpi-jax-bigym/src evaluation/openpi-jax-bigym/tests
+python3 -m compileall -q scripts reconstruction/src \
+  evaluation/bigym-3dgs/src evaluation/bigym-3dgs/tests \
+  inference/third_party/openpi-jax/src inference/third_party/openpi-jax/tests
 python3 - <<'PY'
 import json
 from pathlib import Path
@@ -16,7 +20,8 @@ paths = (
     sorted(Path("configs").glob("*.json"))
     + sorted(Path("evidence").glob("*.json"))
     + sorted(Path("data/manifests").glob("*.json"))
-    + sorted(Path("evaluation/openpi-jax-bigym").glob("*.json"))
+    + sorted(Path("evaluation/bigym-3dgs").glob("*.json"))
+    + sorted(Path("inference/third_party/openpi-jax").glob("*.json"))
 )
 for path in paths:
     json.loads(path.read_text(encoding="utf-8"))

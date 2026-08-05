@@ -1,6 +1,6 @@
 <div align="center">
   <h1>AMD Radeon BiGym + 3DGS Kitchen</h1>
-  <p><strong>ROCm-native 3D Gaussian reconstruction and visual-shell integration for BiGym/MuJoCo</strong></p>
+  <p><strong>DL3DV reconstruction to provider-neutral BiGym evaluation on AMD ROCm</strong></p>
   <p>
     <a href="https://github.com/eust-w/amd-bigym-3dgs-rocm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/eust-w/amd-bigym-3dgs-rocm/ci.yml?branch=main&amp;style=flat-square&amp;label=CI" alt="CI status"></a>
     <a href="evidence/amd-rocm-main-status.json"><img src="https://img.shields.io/badge/Reproduction-passed-22C55E?style=flat-square" alt="AMD reproduction passed"></a>
@@ -21,10 +21,11 @@
   <p><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a></p>
 </div>
 
-This is the AMD Radeon/ROCm implementation for reconstructing, loading and
-validating the visual-only 3D Gaussian Splatting kitchen shell used by BiGym
-`DishwasherUnloadCutleryLong`. The reconstruction and downloadable shell named
-below were produced on AMD Radeon PRO W7900D.
+This is the end-to-end AMD Radeon/ROCm implementation for reconstructing a
+DL3DV kitchen, loading its 3D Gaussian room shell in BiGym, evaluating an
+external policy, recording all three cameras and validating complete
+trajectories. The reconstruction and downloadable shell named below were
+produced on AMD Radeon PRO W7900D.
 
 ## BiGym + 3DGS runtime demo
 
@@ -162,6 +163,8 @@ does not promote the separate 32-episode replay stage.
 - `gsplat==1.4.0` `gfx1100` compatibility patch and real rasterization smoke;
 - BiGym visual-only shell compositing with zero added MuJoCo physics objects;
 - strict `head`/left-wrist/right-wrist rendering with no fallback;
+- provider-neutral inference HTTP v2 contract with isolated third-party adapters;
+- closed-loop evaluation with synchronized three-camera MP4 and append-only trajectories;
 - distinct-demo replay plan verification;
 - LeRobot v3 structural, finite-value and full-video decode checks;
 - license-safe synthetic reconstruction smoke used by CI.
@@ -170,15 +173,55 @@ See [`docs/02-rocm-gsplat.md`](docs/02-rocm-gsplat.md) for the ROCm build
 boundary and [`docs/01-end-to-end.md`](docs/01-end-to-end.md) for the coordinate
 and compositing path.
 
+## End-to-end closed-loop evaluation
+
+The repository now connects reconstruction, shell integration, external
+inference, BiGym evaluation, three-camera recording and result validation:
+
+```text
+DL3DV -> OpenSplat/HIP -> AMD 3DGS shell -> BiGym/MuJoCo
+                                              ^
+third-party inference -> HTTP protocol v2 ----+
+                                              |
+                       MP4 + JSONL + manifest + validation
+```
+
+Prepare the simulator and the included OpenPI JAX provider:
+
+```bash
+export AMD_PIPELINE_ROOT=/workspace/amd-bigym-3dgs-rocm
+export INFERENCE_PROVIDER=openpi-jax
+export INFERENCE_BASE_URL=http://127.0.0.1:7891
+export INFERENCE_GPU=0
+export SIM_GPU=0
+
+make eval-preflight
+make eval-bootstrap
+make eval-download-shell
+make inference-openpi-bootstrap
+make inference-openpi-download
+```
+
+Run `make inference-openpi-serve` in terminal A, then run `make eval-probe`,
+`make eval-smoke` and `make eval-formal` in terminal B. To use another model,
+implement [`inference/PROTOCOL.md`](inference/PROTOCOL.md), point
+`INFERENCE_BASE_URL` at it and keep the same evaluation commands.
+
 ## Repository checks
 
-The policy-evaluation lane for the pinned OpenPI JAX checkpoint is isolated in
-[`evaluation/openpi-jax-bigym/`](evaluation/openpi-jax-bigym/README.md). It
-keeps the JAX policy server and the PyTorch/gsplat BiGym renderer in separate
-ROCm processes (one or two AMD GPUs), then runs a 3-episode smoke gate and a
-32-seed formal `DishwasherUnloadCutleryLong` benchmark. The evaluator also
-accepts any positive custom episode count. Formal-32 is the comparable contract,
-not a software limit.
+The simulator-side evaluation lane is now provider-neutral and lives in
+[`evaluation/bigym-3dgs/`](evaluation/bigym-3dgs/README.md). Third-party model
+services live under [`inference/third_party/`](inference/README.md) and connect
+through the versioned [HTTP inference v2 protocol](inference/PROTOCOL.md).
+OpenPI JAX is included as the first optional provider; another model server can
+be added without changing the BiGym recorder or validator. Framework stacks
+remain separate ROCm processes even though their code is in one repository.
+Reusable simulator changes are tracked separately in
+[`docs/upstream-contributions.md`](docs/upstream-contributions.md).
+
+The default flow runs a 3-episode smoke gate and a 32-seed formal
+`DishwasherUnloadCutleryLong` benchmark. The evaluator also accepts any positive
+custom episode count. Formal-32 is the comparable contract, not a software limit.
 
 The current evaluator records every reset and transition as append-only JSONL,
 all three policy cameras as synchronized MP4, state/action/reward/done/info,
@@ -189,7 +232,7 @@ rollouts remain available for diagnosis. Existing completed summary-only runs
 must be rerun to obtain these fields.
 
 The latest live-camera-calibrated Radeon smoke receipt is
-[`evaluation/openpi-jax-bigym/evidence/amd-smoke-20260804.json`](evaluation/openpi-jax-bigym/evidence/amd-smoke-20260804.json).
+[`evaluation/bigym-3dgs/evidence/amd-smoke-20260804.json`](evaluation/bigym-3dgs/evidence/amd-smoke-20260804.json).
 All three strict 3DGS camera views passed manual clarity review. The bounded
 `3 x 100`-step smoke completed with 30 real JAX requests and `0/3` task
 successes, so the runtime integration is reproducible but formal 32-episode
@@ -198,6 +241,7 @@ policy acceptance remains open.
 ```bash
 make verify
 make verify-evaluation
+make verify-inference
 make smoke-reconstruction
 python scripts/check_markdown_links.py
 ```

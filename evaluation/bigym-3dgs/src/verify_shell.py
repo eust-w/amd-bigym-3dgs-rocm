@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the pinned OpenPI checkpoint and AMD visual-shell layout."""
+"""Verify the pinned AMD visual-shell layout."""
 
 from __future__ import annotations
 
@@ -17,54 +17,14 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def payload_bytes(root: Path) -> int:
-    return sum(
-        path.stat().st_size
-        for path in root.rglob("*")
-        if path.is_file() and ".cache" not in path.parts
-    )
-
-
-def payload_files(root: Path) -> int:
-    return sum(
-        1
-        for path in root.rglob("*")
-        if path.is_file() and ".cache" not in path.parts
-    )
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--lock", type=Path, required=True)
-    parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--shell", type=Path, required=True)
     args = parser.parse_args()
 
     lock = json.loads(args.lock.read_text(encoding="utf-8"))
-    checkpoint = args.checkpoint.resolve()
     shell = args.shell.resolve()
-
-    required_checkpoint = [
-        checkpoint / "params" / "_METADATA",
-        checkpoint / "params" / "manifest.ocdbt",
-        checkpoint / "assets" / lock["checkpoint"]["asset_id"] / "norm_stats.json",
-    ]
-    missing = [str(path) for path in required_checkpoint if not path.is_file()]
-    if missing:
-        raise SystemExit(f"missing checkpoint files: {missing}")
-
-    actual_bytes = payload_bytes(checkpoint)
-    expected_bytes = int(lock["checkpoint"]["bytes"])
-    if actual_bytes != expected_bytes:
-        raise SystemExit(
-            f"checkpoint byte mismatch: expected {expected_bytes}, got {actual_bytes}"
-        )
-    actual_files = payload_files(checkpoint)
-    expected_files = int(lock["checkpoint"]["files"])
-    if actual_files != expected_files:
-        raise SystemExit(
-            f"checkpoint file-count mismatch: expected {expected_files}, got {actual_files}"
-        )
 
     checks = {
         "scene-shell-profile.json": lock["visual_shell"]["profile_sha256"],
@@ -99,9 +59,7 @@ def main() -> None:
     print(
         json.dumps(
             {
-                "status": "artifacts_verified",
-                "checkpoint_bytes": actual_bytes,
-                "checkpoint_files": actual_files,
+                "status": "visual_shell_verified",
                 "shell_profile": str(shell / "scene-shell-profile.json"),
             },
             indent=2,

@@ -120,6 +120,9 @@ class EvaluatorIntegrationTests(unittest.TestCase):
                 "adapter": "pillow-single-thread-timing-v2",
                 "protocol_version": 2,
                 "policy_identity": {
+                    "provider": "fixture-provider",
+                    "model_id": "fixture/model",
+                    "model_revision": "fixture-model",
                     "checkpoint_revision": "fixture-checkpoint",
                     "checkpoint_metadata_sha256": "a" * 64,
                     "openpi_revision": "fixture-openpi",

@@ -140,6 +140,9 @@ def main() -> None:
     except (OSError, subprocess.SubprocessError):
         openpi_revision = None
     service_identity = {
+        "provider": "openpi-jax",
+        "model_id": "WuChao-Cauchy/pi05_ckpts",
+        "model_revision": openpi_revision,
         "checkpoint_dir": str(checkpoint_dir),
         "checkpoint_revision": os.environ.get("POLICY_CHECKPOINT_REVISION"),
         "checkpoint_metadata_sha256": (

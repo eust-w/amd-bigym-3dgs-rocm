@@ -2,20 +2,6 @@
   "schema_version": 2,
   "task": "DishwasherUnloadCutleryLong",
   "prompt": "Unload cutlery from dishwasher to drawer task.",
-  "openpi": {
-    "repository": "https://github.com/WuChao-2024/openpi_lerobot_plus.git",
-    "commit": "9a98f3276fb6b95474ae07ff184ebd5f31686548",
-    "server": "inference_server_bigym.py",
-    "endpoint": "/process_frame"
-  },
-  "checkpoint": {
-    "repository": "WuChao-Cauchy/pi05_ckpts",
-    "repo_type": "model",
-    "revision": "b20a8efaacc6c8e607f2ccb11f47bb2623f5c947",
-    "bytes": 9544470949,
-    "files": 30,
-    "asset_id": "dishwasher_unload_cutlery_long"
-  },
   "bigym": {
     "repository": "https://github.com/WuChao-2024/bigym_plus.git",
     "commit": "d12937686833467b5013ac47a834cf4b6f5a9d53"
@@ -32,18 +18,21 @@
     "calibration_source_camera_index": 296,
     "combined_ply_sha256": "67ab42e99833749d17db499f4ea1c968b193db26760f567244632f41ae58cb17"
   },
-  "policy_contract": {
+  "inference_protocol": {
+    "protocol_version": 2,
+    "health_endpoint": "/health",
+    "inference_endpoint": "/process_frame",
     "action_dim": 16,
-    "model_action_dim": 32,
     "action_horizon": 10,
-    "camera_names": ["high", "l_wrist", "r_wrist"],
-    "camera_sources": [
-      "observation.images.cam_high",
-      "observation.images.cam_left_wrist",
-      "observation.images.cam_right_wrist"
-    ],
-    "wrist_names": ["l_wrist", "r_wrist"],
-    "lora": true
+    "state_dim": 16,
+    "camera_names": ["head", "left_wrist", "right_wrist"],
+    "transport": "HTTP multipart/form-data",
+    "required_identity_fields": [
+      "provider",
+      "model_id",
+      "model_revision",
+      "adapter_source_sha256"
+    ]
   },
   "benchmark": {
     "smoke_episodes": 3,
