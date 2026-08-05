@@ -13,7 +13,7 @@ PyTorch/gsplat do not load conflicting ROCm stacks into one process.
 | π0.5 checkpoint | [`WuChao-Cauchy/pi05_ckpts`](https://huggingface.co/WuChao-Cauchy/pi05_ckpts), revision `b20a8efaacc6c8e607f2ccb11f47bb2623f5c947` |
 | BiGym client | [`WuChao-2024/bigym_plus`](https://github.com/WuChao-2024/bigym_plus), commit `d12937686833467b5013ac47a834cf4b6f5a9d53` |
 | AMD visual shell | [`eustance/amd-bigym-3dgs-kitchen-shell`](https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell/tree/amd-rocm-w7900d-20260804), revision `amd-rocm-w7900d-20260804` |
-| Task | `DishwasherUnloadCutleryLong`, 32 formal episodes, seeds `0..31` |
+| Task | `DishwasherUnloadCutleryLong`; formal contract: 32 episodes/seeds `0..31`; custom runs: any positive count |
 
 The complete machine-readable contract is in
 [`VERSION_LOCK.json`](VERSION_LOCK.json). The shell downloader uses the actual
@@ -47,7 +47,18 @@ The recorded bounded AMD smoke result is
 distinct seeds, 100 steps per seed, 30 real policy requests, `213.386 ms` mean
 policy latency, and `0/3` task successes. This passes the runtime and visual
 integration gates; it does not claim policy task success or completion of the
-32-episode formal benchmark.
+32-episode formal benchmark. It was produced by the earlier summary recorder;
+it does not retroactively invent missing wrist video, state, action or reward
+records.
+
+The new full recorder has also been exercised on the Radeon host. The validated
+one-episode run is recorded in
+[`evidence/amd-full-recorder-smoke-20260805.json`](evidence/amd-full-recorder-smoke-20260805.json):
+seed `0`, `319` transitions, `320` synchronized three-camera frame steps,
+`32` real JAX requests, strict 3DGS runtime and recording validation both
+passing, and human review of the three initial/final views passing. The task
+terminated without success, so this is a full-recording/runtime acceptance
+result, not a policy-success claim and not the formal 32-episode score.
 
 ## Runtime split
 
@@ -67,6 +78,9 @@ When reusing an already-built HIP gsplat binary, set
 binary directly, verifies `CameraModelType`, records its SHA-256, and avoids a
 spurious CUDA-toolkit JIT rebuild. Fresh hosts should run
 `bootstrap_bigym_runtime.sh`, which builds the pinned gsplat 1.4.0 patch.
+The bootstrap also forces the Python package back to `gsplat==1.4.0` after
+installing BiGym extras, preventing a newer Python API from being paired with
+the pinned HIP extension.
 
 ## Run
 
@@ -107,21 +121,47 @@ Validate it in terminal B, then run the closed loop:
 ./evaluation/openpi-jax-bigym/bin/probe_policy.sh
 ./evaluation/openpi-jax-bigym/bin/run_eval.sh smoke
 ./evaluation/openpi-jax-bigym/bin/run_eval.sh formal
+
+# A non-benchmark run may use any positive episode count.
+N_EPISODES=8 RUN_NAME=custom-8-full-v2 \
+  ./evaluation/openpi-jax-bigym/bin/run_eval.sh custom
 ```
 
 `run_eval.sh` keeps human review pending by default. After reviewing the
-recorded initial/final head and wrist PNGs, explicitly record the decision when
-regenerating the summary:
+recorded initial/final head and wrist PNGs, update only the summary from the
+already validated artifacts; do not rerun the simulator merely to record the
+human verdict:
 
 ```bash
-export HUMAN_VISUAL_REVIEW=passed   # use failed when any view is blank/blurred
-./evaluation/openpi-jax-bigym/bin/run_eval.sh smoke
+python3 evaluation/openpi-jax-bigym/src/summarize_results.py \
+  --results "$AMD_EVAL_ROOT/results/smoke-full-v2/dishwasher_unload_cutlery_long/results.json" \
+  --recording-validation "$AMD_EVAL_ROOT/results/smoke-full-v2/recording-validation.json" \
+  --output "$AMD_EVAL_ROOT/results/smoke-full-v2/evaluation-summary.json" \
+  --expected-episodes 3 \
+  --human-visual-review passed  # use failed when any view is blank/blurred
 ```
 
-The smoke run is three episodes. The formal run is 32 distinct reset seeds.
-Every episode retains a head-camera H.264 video plus initial/final head and
-wrist PNGs. Failed policy replays remain in the diagnostic result set and are
-classified; they are not silently counted as successes.
+The smoke run is three episodes. The version-locked formal benchmark is 32
+distinct reset seeds. `N_EPISODES` may override either default, or be supplied
+with `custom`; such a run is valid evaluation data but is not the comparable
+formal-32 benchmark.
+
+Every reset and transition is now written immediately to append-only JSONL.
+Each transition explicitly links the 16D state before the action, the 16D state
+after the action, MuJoCo time before/after, the model/environment/clipped
+actions and mask, reward, success/done flags, simulator info, and the record
+indices of the observations before and after the action. The three camera
+frames on a transition are therefore unambiguously the observation after that
+action. Request ID, client PNG/HTTP latency, and server image-decode,
+JAX-inference and serialization timing are retained as well. Head, left-wrist
+and right-wrist observations are synchronized per episode.
+Task failures are finalized as complete diagnostic recordings, never discarded
+or presented as successes.
+
+`RESUME=1` skips already finalized episodes. An interrupted simulator cannot be
+resumed mid-state safely, so `RESTART_INTERRUPTED=1` preserves its partial files
+under `incomplete-attempts/` and replays that seed from reset. Set a new
+`RUN_NAME` to keep independent evaluation populations separate.
 
 ## Output and acceptance
 
@@ -133,11 +173,24 @@ $AMD_EVAL_ROOT/results/
 │   ├── rocm-smi-before.txt
 │   ├── policy-contract-probe.json
 │   └── policy-server.log
-├── smoke/dishwasher_unload_cutlery_long/
-└── formal/dishwasher_unload_cutlery_long/
-    ├── evidence/                 # three-camera initial/final PNGs
-    ├── videos/                   # head policy-view H.264 videos with 3DGS
-    └── results.json              # episode-level raw result
+├── smoke-full-v2/
+│   ├── evaluation-summary.json
+│   ├── recording-validation.json
+│   └── dishwasher_unload_cutlery_long/
+└── formal-full-v2/
+    ├── evaluation-summary.json
+    ├── recording-validation.json
+    └── dishwasher_unload_cutlery_long/
+        ├── episodes/episode-000000/
+        │   ├── steps.jsonl       # reset/events/transitions, flushed per record
+        │   ├── manifest.json     # atomic status, hashes and video metadata
+        │   ├── evidence/         # three-camera initial/final PNGs
+        │   └── videos/
+        │       ├── head.mp4
+        │       ├── left_wrist.mp4
+        │       └── right_wrist.mp4
+        ├── incomplete-attempts/  # preserved only when a run was interrupted
+        └── results.json          # atomically updated after each episode
 ```
 
 Each run also writes `evaluation-summary.json` beside the task directory.
@@ -148,10 +201,17 @@ The gates are deliberately separate:
    finite `10x16` action chunk.
 3. `results.json` proves the policy was closed over the real BiGym environment
    with strict 3DGS rendering.
-4. `evaluation-summary.json` proves episode counts, latency and failure
-   categories are complete.
-5. `human_visual_review_status=passed` proves that the recorded three-camera
+4. `recording-validation.json` proves all episode manifests, JSONL transitions,
+   action/observation alignment, code/checkpoint provenance, three-camera
+   dimensions/frame counts, full decode and hashes are complete.
+5. `evaluation-summary.json` proves episode counts, latency, failure categories
+   and the full-recording gate are complete.
+6. `human_visual_review_status=passed` proves that the recorded three-camera
    images were explicitly reviewed; the default remains `pending`.
+
+This is an evaluation trace, not automatically a successful imitation-learning
+dataset. Filter or label task failures explicitly before downstream training;
+the current public AMD smoke evidence is `0/3` successes.
 
 Run the license-free contract tests locally or in CI:
 

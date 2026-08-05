@@ -176,7 +176,17 @@ The policy-evaluation lane for the pinned OpenPI JAX checkpoint is isolated in
 [`evaluation/openpi-jax-bigym/`](evaluation/openpi-jax-bigym/README.md). It
 keeps the JAX policy server and the PyTorch/gsplat BiGym renderer in separate
 ROCm processes (one or two AMD GPUs), then runs a 3-episode smoke gate and a
-32-seed formal `DishwasherUnloadCutleryLong` benchmark.
+32-seed formal `DishwasherUnloadCutleryLong` benchmark. The evaluator also
+accepts any positive custom episode count. Formal-32 is the comparable contract,
+not a software limit.
+
+The current evaluator records every reset and transition as append-only JSONL,
+all three policy cameras as synchronized MP4, state/action/reward/done/info,
+explicit before/after observation linkage, MuJoCo time, request IDs and
+client/server timing. Per-episode manifests are atomic and hashed; the active
+code and checkpoint identity is frozen into every episode, and failed task
+rollouts remain available for diagnosis. Existing completed summary-only runs
+must be rerun to obtain these fields.
 
 The latest live-camera-calibrated Radeon smoke receipt is
 [`evaluation/openpi-jax-bigym/evidence/amd-smoke-20260804.json`](evaluation/openpi-jax-bigym/evidence/amd-smoke-20260804.json).

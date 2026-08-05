@@ -17,6 +17,7 @@ export ROCM_PATH=${ROCM_PATH:-/opt/rocm}
 export LD_LIBRARY_PATH="$ROCM_PATH/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 export OPENPI_DIR
+export POLICY_CHECKPOINT_REVISION=${POLICY_CHECKPOINT_REVISION:-$CHECKPOINT_REVISION}
 exec "$POLICY_PYTHON" "$EVAL_DIR/src/inference_server_bigym_amd.py" \
   --action-dim 16 \
   --model-action-dim 32 \

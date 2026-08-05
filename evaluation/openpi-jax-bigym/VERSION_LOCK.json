@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "task": "DishwasherUnloadCutleryLong",
   "prompt": "Unload cutlery from dishwasher to drawer task.",
   "openpi": {
@@ -50,6 +50,41 @@
     "formal_episodes": 32,
     "seed0": 0,
     "strict_visual_shell": true,
-    "failed_episodes_retained_for_diagnosis": true
+    "failed_episodes_retained_for_diagnosis": true,
+    "custom_positive_episode_count_supported": true
+  },
+  "recording_contract": {
+    "mode": "full",
+    "step_format": "append-only JSONL",
+    "camera_videos": ["head", "left_wrist", "right_wrist"],
+    "episode_manifest_is_atomic": true,
+    "completed_episode_resume": true,
+    "incomplete_attempts_archived_before_seed_replay": true,
+    "terminal_manifest_is_resume_authority": true,
+    "recording_validation_precedes_summary": true,
+    "policy_identity_locked_per_episode": true,
+    "transition_camera_phase": "observation_after_action",
+    "fields": [
+      "state16",
+      "state16_before",
+      "state16_after",
+      "sim_time_s_before",
+      "sim_time_s_after",
+      "observation_before_record_step_index",
+      "observation_after_record_step_index",
+      "action16_model",
+      "action_env",
+      "action_clipped",
+      "clip_mask",
+      "reward",
+      "success",
+      "terminated",
+      "truncated",
+      "info",
+      "request_id",
+      "client_http_latency_ms",
+      "server_policy_infer_ms",
+      "timestamps"
+    ]
   }
 }
