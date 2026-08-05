@@ -26,6 +26,10 @@ PY
 "$BIGYM_VENV/bin/python" -m pip install --upgrade pip
 "$BIGYM_VENV/bin/python" -m pip install -e "$BIGYM_DIR[examples,visual-shell]" \
   requests==2.34.2
+# BiGym's extras currently allow a newer gsplat Python API than the pinned HIP
+# extension in this repository. Keep both halves on 1.4.0; otherwise a fresh
+# install can fail at runtime with a missing projection_ewa_3dgs_fused_fwd.
+"$BIGYM_VENV/bin/python" -m pip install --no-deps gsplat==1.4.0
 
 VENV="$BIGYM_VENV" \
 ROCM_ROOT=${ROCM_ROOT:-/opt/rocm} \

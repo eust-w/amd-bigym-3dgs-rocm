@@ -48,8 +48,17 @@ distinct seeds, 100 steps per seed, 30 real policy requests, `213.386 ms` mean
 policy latency, and `0/3` task successes. This passes the runtime and visual
 integration gates; it does not claim policy task success or completion of the
 32-episode formal benchmark. It was produced by the earlier summary recorder;
-the full recorder described below requires a new run and does not retroactively
-invent missing wrist video, state, action or reward records.
+it does not retroactively invent missing wrist video, state, action or reward
+records.
+
+The new full recorder has also been exercised on the Radeon host. The validated
+one-episode run is recorded in
+[`evidence/amd-full-recorder-smoke-20260805.json`](evidence/amd-full-recorder-smoke-20260805.json):
+seed `0`, `319` transitions, `320` synchronized three-camera frame steps,
+`32` real JAX requests, strict 3DGS runtime and recording validation both
+passing, and human review of the three initial/final views passing. The task
+terminated without success, so this is a full-recording/runtime acceptance
+result, not a policy-success claim and not the formal 32-episode score.
 
 ## Runtime split
 
@@ -69,6 +78,9 @@ When reusing an already-built HIP gsplat binary, set
 binary directly, verifies `CameraModelType`, records its SHA-256, and avoids a
 spurious CUDA-toolkit JIT rebuild. Fresh hosts should run
 `bootstrap_bigym_runtime.sh`, which builds the pinned gsplat 1.4.0 patch.
+The bootstrap also forces the Python package back to `gsplat==1.4.0` after
+installing BiGym extras, preventing a newer Python API from being paired with
+the pinned HIP extension.
 
 ## Run
 
