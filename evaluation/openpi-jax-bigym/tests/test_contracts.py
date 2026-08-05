@@ -106,6 +106,35 @@ class ContractTests(unittest.TestCase):
         self.assertTrue(reviewed["gates"]["human_visual_review"])
         self.assertEqual(reviewed["human_visual_review_status"], "passed")
 
+    def test_schema_v2_requires_full_recording_gate(self) -> None:
+        results = {
+            "schema_version": 2,
+            "status": "benchmark_complete",
+            "task": "DishwasherUnloadCutleryLong",
+            "n_episodes": 1,
+            "successes": 0,
+            "success_rate": 0.0,
+            "policy_requests": 1,
+            "policy_latency_ms": {"p50": 210.0},
+            "visual_shell": {"strict": True, "runtime_passed": True},
+            "episodes": [{"success": False, "failure_reason": "max_steps_without_success"}],
+        }
+        missing = self.summary.summarize(results, 1)
+        self.assertEqual(missing["status"], "evaluation_failed")
+        self.assertFalse(missing["gates"]["full_evaluation_recording"])
+
+        results["recording"] = {
+            "mode": "full",
+            "episodes_terminal": 1,
+            "episodes_interrupted": 0,
+        }
+        validation = {"status": "recording_valid", "expected_episodes": 1}
+        complete = self.summary.summarize(
+            results, 1, recording_validation=validation
+        )
+        self.assertEqual(complete["status"], "evaluation_complete")
+        self.assertTrue(complete["gates"]["full_evaluation_recording"])
+
     def test_incomplete_episode_count_fails(self) -> None:
         results = {
             "status": "benchmark_complete",
@@ -130,12 +159,34 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("import cv2", adapter)
         self.assertIn("threaded=False", adapter)
         self.assertIn("Image.open", adapter)
+        self.assertIn('"request_id"', adapter)
+        self.assertIn('"policy_infer"', adapter)
+        self.assertIn('"server_total_before_final_serialize"', adapter)
 
     def test_evaluator_can_reuse_verified_prebuilt_hip_gsplat(self) -> None:
         evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()
         self.assertIn("GSPLAT_PREBUILT_DIR", evaluator)
         self.assertIn("_import_module_from_library", evaluator)
         self.assertIn("CameraModelType", evaluator)
+
+    def test_evaluator_records_full_trajectory_and_supports_custom_counts(self) -> None:
+        evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()
+        runner = (ROOT / "bin" / "run_eval.sh").read_text()
+        validator = (ROOT / "src" / "validate_recording.py").read_text()
+        self.assertIn("EpisodeRecorder", evaluator)
+        self.assertIn('"action16_model"', evaluator)
+        self.assertIn('"action_clipped"', evaluator)
+        self.assertIn('"record_type": "transition"', evaluator)
+        self.assertIn("--restart-interrupted", evaluator)
+        self.assertIn("custom)", runner)
+        self.assertIn("N_EPISODES must be a positive integer", runner)
+        self.assertIn("validate_recording.py", runner)
+        self.assertLess(
+            runner.index("validate_recording.py"),
+            runner.index("summarize_results.py"),
+        )
+        self.assertIn("--recording-validation", runner)
+        self.assertIn("REQUIRED_TRANSITION_FIELDS", validator)
 
 
 if __name__ == "__main__":

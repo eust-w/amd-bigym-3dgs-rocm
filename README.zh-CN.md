@@ -168,7 +168,16 @@ ROCm 构建边界见 [`docs/02-rocm-gsplat.md`](docs/02-rocm-gsplat.md)，坐标
 [`evaluation/openpi-jax-bigym/`](evaluation/openpi-jax-bigym/README.md)。它用
 JAX 推理服务与 PyTorch/gsplat BiGym 渲染器隔离为两个 ROCm 进程；支持单卡
 共享或双卡分离，先跑 3 条 smoke，再以 32 个不同 seed 正式评测
-`DishwasherUnloadCutleryLong`。
+`DishwasherUnloadCutleryLong`。评测器也支持任意正整数条数；32 条是可横向比较的
+正式 benchmark 口径，不是代码限制。
+
+新版评测器会把每次 reset 和 transition 立即写入追加式 JSONL，并同步录制 head、
+left wrist、right wrist 三路 MP4；状态、模型动作、环境动作、裁剪动作与 mask、
+reward、成功/终止标记、info、请求 ID，以及客户端与服务端 JAX 推理耗时都会保留。
+每个 transition 都会显式标明动作前/后的 16 维状态、MuJoCo 时间，以及动作前后
+画面所在的记录序号，避免把下一帧错配为当前动作输入。每条 episode 有原子
+manifest、代码/权重身份、视频元数据和 SHA-256。任务失败轨迹不会被丢弃或冒充
+成功；旧的摘要型评测必须重新运行，才能补齐这些原本没有采集的数据。
 
 ```bash
 make verify
