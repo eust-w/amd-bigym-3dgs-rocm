@@ -45,6 +45,10 @@ hf auth login
 reward/done/info、请求 ID、推理耗时、原子 manifest 和 SHA-256。任务失败轨迹
 保留用于诊断，但不能冒充成功示范数据。
 
+`evidence/` 只允许提交通过完整录像校验、结果校验和三相机人工验收的正式评测
+回执。smoke、中断运行和任务失败轨迹仅留在本地结果目录；当前版本不包含已验收的
+正式策略评测回执。
+
 原先随仓库提供的模型推理实现和兼容入口完整保留在
 [`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence)
 分支；当前分支仅依赖上述外部 HTTP 契约。
