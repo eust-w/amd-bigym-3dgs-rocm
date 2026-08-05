@@ -29,9 +29,6 @@ jobs:
       - name: Verify provider-neutral BiGym evaluation contracts
         run: ./evaluation/bigym-3dgs/bin/verify.sh
 
-      - name: Verify OpenPI JAX third-party provider contract
-        run: ./inference/third_party/openpi-jax/bin/verify.sh
-
       - name: Exercise the reconstruction and shell-export contract
         run: make smoke-reconstruction PYTHON=python
 

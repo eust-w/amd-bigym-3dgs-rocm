@@ -3,10 +3,9 @@
 该目录负责统一的仿真评测侧：BiGym/MuJoCo、ROCm PyTorch + gsplat、AMD
 3DGS 厨房壳、闭环执行、三相机 MP4、完整轨迹、原子 manifest、哈希和结果校验。
 
-推理实现不再和评测代码混在一起。统一接口见
-[`../../inference/PROTOCOL.md`](../../inference/PROTOCOL.md)，第三方实现放在
-`inference/third_party/<provider>/`。当前提供 OpenPI JAX 参考适配器，但评测器
-不再检查 OpenPI 或 JAX 专属字段。
+推理实现不再和评测代码混在一起。该目录只包含外部服务客户端、协议探针、BiGym
+闭环、录像和校验器；统一接口见 [`INFERENCE_PROTOCOL.md`](INFERENCE_PROTOCOL.md)。
+本分支不包含模型运行时、权重、下载器或推理服务器。
 
 ## 运行结构
 
@@ -16,14 +15,14 @@
 模型/权重/推理框架                     录像 + 轨迹 + manifest + 校验
 ```
 
-代码可以放在同一个仓库，运行时仍需保持两个进程，避免 JAX ROCm 与
-PyTorch/gsplat ROCm 在同一 Python 进程中冲突。
+推理服务必须位于本分支之外，运行时也应与 PyTorch/gsplat ROCm 仿真器保持为
+两个独立进程。
 
 ## 快速开始
 
 ```bash
 export AMD_PIPELINE_ROOT=/workspace/amd-bigym-3dgs-rocm
-export INFERENCE_PROVIDER=openpi-jax
+export INFERENCE_PROVIDER=external
 export INFERENCE_BASE_URL=http://127.0.0.1:7891
 export INFERENCE_GPU=0
 export SIM_GPU=0
@@ -35,7 +34,7 @@ export VENV=/workspace/amd-bigym-3dgs/.venv
 hf auth login
 ./evaluation/bigym-3dgs/bin/download_shell.sh
 
-# 单独启动一个第三方推理服务后：
+# 在本分支之外启动兼容推理服务后：
 ./evaluation/bigym-3dgs/bin/probe_inference.sh
 ./evaluation/bigym-3dgs/bin/run_eval.sh smoke
 ./evaluation/bigym-3dgs/bin/run_eval.sh formal
@@ -45,5 +44,9 @@ hf auth login
 保存 head、left wrist、right wrist 三路视频、逐步 JSONL、动作前后状态、
 reward/done/info、请求 ID、推理耗时、原子 manifest 和 SHA-256。任务失败轨迹
 保留用于诊断，但不能冒充成功示范数据。
+
+原先随仓库提供的模型推理实现和兼容入口完整保留在
+[`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence)
+分支；当前分支仅依赖上述外部 HTTP 契约。
 
 完整目录、验收门禁和兼容入口说明见 [English README](README.md)。

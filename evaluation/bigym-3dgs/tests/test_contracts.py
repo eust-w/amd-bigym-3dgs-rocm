@@ -160,7 +160,7 @@ class ContractTests(unittest.TestCase):
         self.assertIn('identity.get("provider")', evaluator)
         self.assertIn('identity.get("model_id")', evaluator)
         self.assertIn('identity.get("model_revision")', evaluator)
-        self.assertNotIn('payload.get("backend") != "jax-rocm"', evaluator)
+        self.assertIn('identity.get("adapter_source_sha256")', evaluator)
 
     def test_evaluator_can_reuse_verified_prebuilt_hip_gsplat(self) -> None:
         evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()

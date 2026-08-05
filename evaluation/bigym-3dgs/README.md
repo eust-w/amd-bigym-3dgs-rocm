@@ -8,10 +8,11 @@ This directory owns the simulator side of the AMD evaluation pipeline:
 - synchronized head, left-wrist and right-wrist MP4 recording;
 - append-only transitions, atomic manifests, hashes and result validation.
 
-Inference implementations are deliberately outside this directory. See
-[`../../inference/`](../../inference/README.md) for the provider-neutral
-protocol and third-party adapters. The included OpenPI JAX provider is one
-reference implementation, not a hard evaluator dependency.
+Inference implementations are deliberately outside this branch. This directory
+contains only the external-service client, contract probe, BiGym loop, recorder
+and validator. See [`INFERENCE_PROTOCOL.md`](INFERENCE_PROTOCOL.md) for the
+provider-neutral contract. No model runtime, checkpoint or inference server is
+included here.
 
 ## Architecture boundary
 
@@ -47,7 +48,7 @@ Use a persistent AMD workspace; large PLY and run outputs never belong in Git.
 export AMD_PIPELINE_ROOT=/workspace/amd-bigym-3dgs-rocm
 export INFERENCE_GPU=0
 export SIM_GPU=0
-export INFERENCE_PROVIDER=openpi-jax  # or another provider name
+export INFERENCE_PROVIDER=external
 export INFERENCE_BASE_URL=http://127.0.0.1:7891
 
 ./evaluation/bigym-3dgs/bin/preflight_amd.sh
@@ -60,15 +61,8 @@ hf auth login
 ./evaluation/bigym-3dgs/bin/download_shell.sh
 ```
 
-Start a provider separately. For the included OpenPI JAX adapter:
-
-```bash
-./inference/third_party/openpi-jax/bin/bootstrap.sh
-./inference/third_party/openpi-jax/bin/download_checkpoint.sh
-./inference/third_party/openpi-jax/bin/serve.sh
-```
-
-Then validate the provider contract and run the closed loop:
+Start a compatible provider outside this branch. Then validate its contract and
+run the closed loop:
 
 ```bash
 ./evaluation/bigym-3dgs/bin/probe_inference.sh
@@ -80,9 +74,9 @@ N_EPISODES=8 RUN_NAME=custom-8-full-v2 \
 ```
 
 The versioned HTTP contract is documented in
-[`../../inference/PROTOCOL.md`](../../inference/PROTOCOL.md). A provider must
-freeze its provider/model/checkpoint/adapter identity in `/health`, echo each
-request ID and return finite `10 x 16` action chunks with timing evidence.
+[`INFERENCE_PROTOCOL.md`](INFERENCE_PROTOCOL.md). A provider must freeze its
+provider/model/adapter identity in `/health`, echo each request ID and return
+finite `10 x 16` action chunks with timing evidence.
 
 ## Full trajectory recording
 
@@ -121,11 +115,12 @@ The evidence gates remain separate:
 5. `evaluation-summary.json` proves counts, latency and failure categories.
 6. `human_visual_review_status=passed` proves explicit three-camera review.
 
-The retained Radeon receipts in [`evidence/`](evidence/) predate this directory
-split and used the OpenPI JAX adapter. The one-episode full-recorder smoke has a
-complete transition sequence and validated three-camera media but no task
-success. The earlier `3 x 100` smoke had `0/3` task successes. Neither is a
-formal 32-episode policy score.
+The retained Radeon receipts in [`evidence/`](evidence/) predate this branch
+split and used the provider implementation now archived on
+[`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence).
+The one-episode full-recorder smoke has a complete transition sequence and
+validated three-camera media but no task success. The earlier `3 x 100` smoke
+had `0/3` task successes. Neither is a formal 32-episode policy score.
 
 ## Verification
 
@@ -136,8 +131,9 @@ formal 32-episode policy score.
 These CPU-safe contract tests do not claim a live ROCm run. GPU, visual-shell,
 policy-request, recording and task-success evidence remain separate gates.
 
-## Compatibility
+## Branch boundary
 
-The previous `evaluation/openpi-jax-bigym/` entrypoints are retained as thin
-wrappers for one migration cycle. New integrations should use this directory
-and select an inference provider explicitly.
+The former bundled model provider and compatibility wrappers were removed from
+this branch and preserved without alteration on `interence`. New integrations
+should implement the external HTTP contract and select their provider through
+`INFERENCE_BASE_URL`.

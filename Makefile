@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON ?= python3
 
-.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify verify-evaluation verify-inference verify-pipeline eval-preflight eval-bootstrap eval-download-shell inference-openpi-bootstrap inference-openpi-download inference-openpi-serve eval-probe eval-smoke eval-formal
+.PHONY: preflight install-bigym build-gsplat build-opensplat smoke-gsplat download-reference-data reconstruct reconstruct-rocm smoke-reconstruction stage-shell collect validate clean verify verify-evaluation verify-pipeline eval-preflight eval-bootstrap eval-download-shell eval-probe eval-smoke eval-formal
 
 preflight:
 	./scripts/preflight_rocm.sh
@@ -61,10 +61,7 @@ verify:
 verify-evaluation:
 	./evaluation/bigym-3dgs/bin/verify.sh
 
-verify-inference:
-	./inference/third_party/openpi-jax/bin/verify.sh
-
-verify-pipeline: verify-evaluation verify-inference
+verify-pipeline: verify-evaluation
 
 eval-preflight:
 	./evaluation/bigym-3dgs/bin/preflight_amd.sh
@@ -75,15 +72,6 @@ eval-bootstrap:
 
 eval-download-shell:
 	./evaluation/bigym-3dgs/bin/download_shell.sh
-
-inference-openpi-bootstrap:
-	./inference/third_party/openpi-jax/bin/bootstrap.sh
-
-inference-openpi-download:
-	./inference/third_party/openpi-jax/bin/download_checkpoint.sh
-
-inference-openpi-serve:
-	./inference/third_party/openpi-jax/bin/serve.sh
 
 eval-probe:
 	./evaluation/bigym-3dgs/bin/probe_inference.sh

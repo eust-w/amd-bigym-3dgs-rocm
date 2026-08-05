@@ -163,7 +163,7 @@ does not promote the separate 32-episode replay stage.
 - `gsplat==1.4.0` `gfx1100` compatibility patch and real rasterization smoke;
 - BiGym visual-only shell compositing with zero added MuJoCo physics objects;
 - strict `head`/left-wrist/right-wrist rendering with no fallback;
-- provider-neutral inference HTTP v2 contract with isolated third-party adapters;
+- external inference HTTP v2 client contract with no model runtime or checkpoint in this branch;
 - closed-loop evaluation with synchronized three-camera MP4 and append-only trajectories;
 - distinct-demo replay plan verification;
 - LeRobot v3 structural, finite-value and full-video decode checks;
@@ -181,16 +181,16 @@ inference, BiGym evaluation, three-camera recording and result validation:
 ```text
 DL3DV -> OpenSplat/HIP -> AMD 3DGS shell -> BiGym/MuJoCo
                                               ^
-third-party inference -> HTTP protocol v2 ----+
+external inference -> HTTP protocol v2 -------+
                                               |
                        MP4 + JSONL + manifest + validation
 ```
 
-Prepare the simulator and the included OpenPI JAX provider:
+Prepare the simulator and point it at an external inference service:
 
 ```bash
 export AMD_PIPELINE_ROOT=/workspace/amd-bigym-3dgs-rocm
-export INFERENCE_PROVIDER=openpi-jax
+export INFERENCE_PROVIDER=external
 export INFERENCE_BASE_URL=http://127.0.0.1:7891
 export INFERENCE_GPU=0
 export SIM_GPU=0
@@ -198,24 +198,25 @@ export SIM_GPU=0
 make eval-preflight
 make eval-bootstrap
 make eval-download-shell
-make inference-openpi-bootstrap
-make inference-openpi-download
 ```
 
-Run `make inference-openpi-serve` in terminal A, then run `make eval-probe`,
-`make eval-smoke` and `make eval-formal` in terminal B. To use another model,
-implement [`inference/PROTOCOL.md`](inference/PROTOCOL.md), point
-`INFERENCE_BASE_URL` at it and keep the same evaluation commands.
+Start a compatible model service outside this branch, then run `make eval-probe`,
+`make eval-smoke` and `make eval-formal`. The required client contract is
+documented in
+[`evaluation/bigym-3dgs/INFERENCE_PROTOCOL.md`](evaluation/bigym-3dgs/INFERENCE_PROTOCOL.md).
+The former bundled provider implementation is preserved on the
+[`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence)
+branch.
 
 ## Repository checks
 
 The simulator-side evaluation lane is now provider-neutral and lives in
-[`evaluation/bigym-3dgs/`](evaluation/bigym-3dgs/README.md). Third-party model
-services live under [`inference/third_party/`](inference/README.md) and connect
-through the versioned [HTTP inference v2 protocol](inference/PROTOCOL.md).
-OpenPI JAX is included as the first optional provider; another model server can
-be added without changing the BiGym recorder or validator. Framework stacks
-remain separate ROCm processes even though their code is in one repository.
+[`evaluation/bigym-3dgs/`](evaluation/bigym-3dgs/README.md). It includes only
+the external-service client, protocol probe, BiGym loop, recorder and validator.
+No model server, model framework or checkpoint downloader is tracked on this
+branch. Any compatible service can be selected through `INFERENCE_BASE_URL`
+without changing the BiGym recorder or validator, and it must remain a separate
+process from the PyTorch/gsplat simulator.
 Reusable simulator changes are tracked separately in
 [`docs/upstream-contributions.md`](docs/upstream-contributions.md).
 
@@ -227,21 +228,21 @@ The current evaluator records every reset and transition as append-only JSONL,
 all three policy cameras as synchronized MP4, state/action/reward/done/info,
 explicit before/after observation linkage, MuJoCo time, request IDs and
 client/server timing. Per-episode manifests are atomic and hashed; the active
-code and checkpoint identity is frozen into every episode, and failed task
+external service and model identity is frozen into every episode, and failed task
 rollouts remain available for diagnosis. Existing completed summary-only runs
 must be rerun to obtain these fields.
 
 The latest live-camera-calibrated Radeon smoke receipt is
 [`evaluation/bigym-3dgs/evidence/amd-smoke-20260804.json`](evaluation/bigym-3dgs/evidence/amd-smoke-20260804.json).
 All three strict 3DGS camera views passed manual clarity review. The bounded
-`3 x 100`-step smoke completed with 30 real JAX requests and `0/3` task
-successes, so the runtime integration is reproducible but formal 32-episode
-policy acceptance remains open.
+`3 x 100`-step smoke completed with 30 real policy requests and `0/3` task
+successes. That historical run used the provider implementation now archived on
+`interence`; it proves the runtime path but not formal 32-episode policy
+acceptance.
 
 ```bash
 make verify
 make verify-evaluation
-make verify-inference
 make smoke-reconstruction
 python scripts/check_markdown_links.py
 ```

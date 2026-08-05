@@ -155,7 +155,7 @@ make validate
 - `gsplat==1.4.0` `gfx1100` 兼容补丁和真实 rasterization smoke；
 - 不增加 MuJoCo 物理对象的 BiGym 纯视觉 shell 合成；
 - 禁止 fallback 的 head、左右腕部三相机严格渲染；
-- 与模型无关的推理 HTTP v2 协议和独立第三方适配器；
+- 外部推理 HTTP v2 客户端契约；本分支不包含模型运行时或权重；
 - 闭环评测、三相机同步 MP4、追加式轨迹与原子 manifest；
 - 不同 demonstration 的 replay plan 校验；
 - LeRobot v3 结构、有限数值和全视频解码校验；
@@ -171,16 +171,16 @@ ROCm 构建边界见 [`docs/02-rocm-gsplat.md`](docs/02-rocm-gsplat.md)，坐标
 ```text
 DL3DV -> OpenSplat/HIP -> AMD 3DGS 房间壳 -> BiGym/MuJoCo
                                                    ^
-第三方推理 -> HTTP protocol v2 --------------------+
+外部推理服务 -> HTTP protocol v2 ------------------+
                                                    |
                            MP4 + JSONL + manifest + 校验
 ```
 
-先准备仿真侧和内置的 OpenPI JAX 第三方适配器：
+先准备仿真侧，并指向仓库外部的推理服务：
 
 ```bash
 export AMD_PIPELINE_ROOT=/workspace/amd-bigym-3dgs-rocm
-export INFERENCE_PROVIDER=openpi-jax
+export INFERENCE_PROVIDER=external
 export INFERENCE_BASE_URL=http://127.0.0.1:7891
 export INFERENCE_GPU=0
 export SIM_GPU=0
@@ -188,23 +188,22 @@ export SIM_GPU=0
 make eval-preflight
 make eval-bootstrap
 make eval-download-shell
-make inference-openpi-bootstrap
-make inference-openpi-download
 ```
 
-终端 A 运行 `make inference-openpi-serve`；终端 B 依次运行
-`make eval-probe`、`make eval-smoke` 和 `make eval-formal`。更换其他模型时，只需
-实现 [`inference/PROTOCOL.md`](inference/PROTOCOL.md)，修改
-`INFERENCE_BASE_URL`，评测和录像代码保持不变。
+在本分支之外启动兼容服务后，依次运行 `make eval-probe`、`make eval-smoke` 和
+`make eval-formal`。客户端协议见
+[`evaluation/bigym-3dgs/INFERENCE_PROTOCOL.md`](evaluation/bigym-3dgs/INFERENCE_PROTOCOL.md)。
+原先随仓库提供的推理实现完整保留在
+[`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence)
+分支。
 
 ## 仓库校验
 
 仿真评测主线现在与模型无关，位于
-[`evaluation/bigym-3dgs/`](evaluation/bigym-3dgs/README.zh-CN.md)。第三方模型服务
-放在 [`inference/third_party/`](inference/README.md)，通过版本化
-[HTTP inference v2 协议](inference/PROTOCOL.md)接入。OpenPI JAX 是第一个可选
-参考实现，后续模型不需要改动 BiGym 录像和校验代码。代码统一进一个仓库，运行时
-仍保持推理服务与 PyTorch/gsplat 仿真器为两个 ROCm 进程。
+[`evaluation/bigym-3dgs/`](evaluation/bigym-3dgs/README.zh-CN.md)。这里只保留外部
+服务客户端、协议探针、BiGym 闭环、录像和校验器；本分支不跟踪模型服务器、推理
+框架、权重或下载器。任意兼容服务均可通过 `INFERENCE_BASE_URL` 接入，不需要修改
+录像与校验代码，且运行时仍与 PyTorch/gsplat 仿真器保持为独立进程。
 可复用的上游 BiGym 改进状态单独记录在
 [`docs/upstream-contributions.md`](docs/upstream-contributions.md)。
 
@@ -214,7 +213,7 @@ make inference-openpi-download
 
 新版评测器会把每次 reset 和 transition 立即写入追加式 JSONL，并同步录制 head、
 left wrist、right wrist 三路 MP4；状态、模型动作、环境动作、裁剪动作与 mask、
-reward、成功/终止标记、info、请求 ID，以及客户端与服务端 JAX 推理耗时都会保留。
+reward、成功/终止标记、info、请求 ID，以及客户端与服务端推理耗时都会保留。
 每个 transition 都会显式标明动作前/后的 16 维状态、MuJoCo 时间，以及动作前后
 画面所在的记录序号，避免把下一帧错配为当前动作输入。每条 episode 有原子
 manifest、代码/权重身份、视频元数据和 SHA-256。任务失败轨迹不会被丢弃或冒充
@@ -223,7 +222,6 @@ manifest、代码/权重身份、视频元数据和 SHA-256。任务失败轨迹
 ```bash
 make verify
 make verify-evaluation
-make verify-inference
 make smoke-reconstruction
 python scripts/check_markdown_links.py
 ```

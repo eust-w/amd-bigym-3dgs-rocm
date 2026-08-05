@@ -22,10 +22,10 @@ flowchart TB
     A3[MuJoCo segmentation foreground]
   end
 
-  subgraph Inference[Third-party inference process]
-    I1[Provider-specific model runtime]
-    I2[HTTP inference protocol v2]
-    I3[OpenPI JAX or another adapter]
+  subgraph Inference[External inference boundary]
+    I1[Model service outside this branch]
+    I2[HTTP client contract v2]
+    I3[Provider selected by URL]
   end
 
   subgraph Evaluation[Evaluation and recording plane]

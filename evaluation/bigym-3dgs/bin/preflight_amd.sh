@@ -33,5 +33,5 @@ rocm-smi --showproductname --showuniqueid --showmeminfo vram --showuse \
 printf 'AMD_PREFLIGHT_OK gfx1100=%s inference_gpu=%s sim_gpu=%s\n' \
   "$ARCH_COUNT" "$INFERENCE_GPU" "$SIM_GPU"
 if test "$ARCH_COUNT" -eq 1; then
-  printf 'WARN: JAX and gsplat will share one GPU in separate processes; run the smoke memory gate before formal evaluation.\n'
+  printf 'WARN: an external inference service and gsplat may share one GPU in separate processes; run the smoke memory gate before formal evaluation.\n'
 fi
