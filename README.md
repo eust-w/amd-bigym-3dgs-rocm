@@ -231,12 +231,11 @@ code and checkpoint identity is frozen into every episode, and failed task
 rollouts remain available for diagnosis. Existing completed summary-only runs
 must be rerun to obtain these fields.
 
-The latest live-camera-calibrated Radeon smoke receipt is
-[`evaluation/bigym-3dgs/evidence/amd-smoke-20260804.json`](evaluation/bigym-3dgs/evidence/amd-smoke-20260804.json).
-All three strict 3DGS camera views passed manual clarity review. The bounded
-`3 x 100`-step smoke completed with 30 real JAX requests and `0/3` task
-successes, so the runtime integration is reproducible but formal 32-episode
-policy acceptance remains open.
+This branch intentionally publishes no policy-evaluation receipt until a formal
+run satisfies the complete recording, result-validation and explicit
+three-camera visual-review gates. Smoke runs and task-failed trajectories remain
+local diagnostic artifacts under the configured results directory; they are not
+release evidence.
 
 ```bash
 make verify
@@ -247,8 +246,9 @@ python scripts/check_markdown_links.py
 ```
 
 GitHub CI verifies public-file hashes, JSON contracts, both patches, Markdown
-links and the license-free shell exporter. The recorded Radeon GPU result is
-independently exposed as a machine-readable receipt and immutable hashes.
+links and the license-free shell exporter. The recorded Radeon reconstruction
+result is independently exposed as a machine-readable receipt and immutable
+hashes; it is not a policy-evaluation claim.
 
 ## License
 

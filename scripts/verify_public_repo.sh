@@ -48,6 +48,32 @@ fi
 
 python3 - <<'PY'
 import json
+import subprocess
+from pathlib import Path
+
+tracked = subprocess.check_output(
+    ["git", "ls-files", "evaluation/bigym-3dgs/evidence/*.json"],
+    text=True,
+).splitlines()
+if not tracked:
+    print("NO_ACCEPTED_FORMAL_EVIDENCE_PUBLISHED")
+for filename in tracked:
+    path = Path(filename)
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    benchmark = receipt.get("benchmark", {})
+    gates = receipt.get("gates", {})
+    assert receipt.get("publication_status") == "accepted_formal_evaluation", path
+    assert benchmark.get("mode") == "formal", path
+    assert isinstance(benchmark.get("n_episodes"), int), path
+    assert benchmark["n_episodes"] > 0, path
+    assert gates.get("recording_validation") is True, path
+    assert gates.get("result_validation") is True, path
+    assert gates.get("human_three_camera_review") is True, path
+    print("ACCEPTED_FORMAL_EVIDENCE_OK", path)
+PY
+
+python3 - <<'PY'
+import json
 from pathlib import Path
 
 source = json.loads(Path("data/manifests/dl3dv-kitchen-source.public.json").read_text())
