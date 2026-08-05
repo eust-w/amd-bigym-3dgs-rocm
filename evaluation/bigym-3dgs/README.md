@@ -115,12 +115,10 @@ The evidence gates remain separate:
 5. `evaluation-summary.json` proves counts, latency and failure categories.
 6. `human_visual_review_status=passed` proves explicit three-camera review.
 
-The retained Radeon receipts in [`evidence/`](evidence/) predate this branch
-split and used the provider implementation now archived on
-[`interence`](https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/interence).
-The one-episode full-recorder smoke has a complete transition sequence and
-validated three-camera media but no task success. The earlier `3 x 100` smoke
-had `0/3` task successes. Neither is a formal 32-episode policy score.
+Only an accepted formal evaluation may be committed under [`evidence/`](evidence/).
+Smoke runs, interrupted runs and task-failed trajectories stay in the local
+results directory for diagnosis and are not published as release evidence. This
+revision contains no accepted formal policy-evaluation receipt.
 
 ## Verification
 
