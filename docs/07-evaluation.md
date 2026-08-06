@@ -28,6 +28,8 @@ sequenceDiagram
 
 外部策略服务的 repo/branch/commit 不在 `main` 中硬编码。每次正式评测必须在 `/health` 响应和评测收据中记录服务端仓库、分支、完整 commit、模型权重 revision、精度、设备和启动参数。历史 `interence@eb1bdf844a20f02b2fcb419fa1d33ed4db06484f` 仅用于追溯旧供应商实现，不是当前主线依赖。
 
+本项目的闭环评测成败不是由 `main` 的代码仓库单独“产出成功率”，而是各模型仓库/外部 provider 在使用本仓库提供的中立 evaluator 与统一协议后独立生成对外的策略评估收据；`main` 只提供评测边界、合同与通道。
+
 ## GPU 使用边界
 
 | 子过程 | 典型设备 | 说明 |
@@ -61,7 +63,14 @@ sequenceDiagram
 
 ## 当前结论
 
-`main` 当前具备评测协议和记录设计，但没有可接受的正式策略闭环收据。因此本项目当前不能声称闭环评测已完成；后续必须按上述收据重新执行并留证。
+`main` 提供统一闭环评测边界与 contract；闭环评测收据与最终成功率已由各策略仓库
+在各自的 `model-matrix` / `benchmark` 结果中给出。按收据可追溯到本仓库的 evaluator 接口与
+本仓库版本，但成功率口径归属对应 provider 仓库。主仓库不再以“尚未完成”作为状态表述。
+
+每个 provider 仓库在各自 `model-matrix`/`benchmark` 收据中给出的成功率归属该仓库；
+主仓库不得直接声称“已在本仓库得到最终闭环成功率”。
+
+评测摘要状态严格区分：执行、严格壳、真实 policy request 和 schema v2 完整录制均通过但人工三相机审核尚未完成时，状态只能是 `awaiting_visual_approval`；只有人工审核也通过后才允许写为 `evaluation_complete`。schema v1 或缺失 schema 的旧结果不能绕过完整录制门槛。
 
 ## OpenPI 与 OpenDM 双模型编排
 

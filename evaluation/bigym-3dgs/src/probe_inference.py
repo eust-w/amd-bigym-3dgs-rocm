@@ -13,6 +13,8 @@ import urllib.request
 import uuid
 import zlib
 
+from inference_contract import validate_policy_health, validate_server_timing
+
 
 def png_rgb(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
     signature = b"\x89PNG\r\n\x1a\n"
@@ -67,23 +69,10 @@ def main() -> None:
     with urllib.request.urlopen(f"{base_url}/health", timeout=10) as response:
         health_status = response.status
         health = json.loads(response.read())
-    identity = health.get("policy_identity") if isinstance(health, dict) else None
-    if (
-        not isinstance(health, dict)
-        or health.get("status") != "ok"
-        or health.get("protocol_version") != 2
-        or not isinstance(identity, dict)
-        or any(
-            not identity.get(key)
-            for key in (
-                "provider",
-                "model_id",
-                "model_revision",
-                "adapter_source_sha256",
-            )
-        )
-    ):
-        raise SystemExit(f"inference health does not implement protocol v2: {health!r}")
+    try:
+        validate_policy_health(health)
+    except ValueError as error:
+        raise SystemExit(f"inference health does not implement protocol v2: {error}") from error
 
     request_id = uuid.uuid4().hex
     images = [
@@ -120,18 +109,10 @@ def main() -> None:
         raise SystemExit("action row does not have 16 values")
     if any(not math.isfinite(float(value)) for row in actions for value in row):
         raise SystemExit("action response contains non-finite values")
-    required_timings = (
-        "image_decode",
-        "policy_infer",
-        "total_before_serialize",
-        "serialization_first_pass",
-        "server_total_before_final_serialize",
-    )
-    timings = result.get("timing_ms")
-    if not isinstance(timings, dict) or any(
-        not isinstance(timings.get(key), (int, float)) for key in required_timings
-    ):
-        raise SystemExit(f"inference response timing contract is incomplete: {timings!r}")
+    try:
+        timings = validate_server_timing(result.get("timing_ms"))
+    except ValueError as error:
+        raise SystemExit(f"inference response timing contract is invalid: {error}") from error
 
     receipt = {
         "status": "inference_contract_passed",

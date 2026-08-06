@@ -19,7 +19,16 @@ class RecordingValidatorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory)
             recorder = EpisodeRecorder(task_dir, 0, 7, 20, fsync=False)
-            policy_health = {"status": "ok", "policy_identity": {"revision": "fixture"}}
+            policy_health = {
+                "status": "ok",
+                "protocol_version": 2,
+                "policy_identity": {
+                    "provider": "fixture",
+                    "model_id": "fixture-model",
+                    "model_revision": "fixture-revision",
+                    "adapter_source_sha256": "b" * 64,
+                },
+            }
             code_revisions = {"evaluation_repository": "fixture", "bigym": "fixture"}
             configuration_sha256 = "a" * 64
             provenance = {

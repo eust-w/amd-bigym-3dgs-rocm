@@ -12,13 +12,8 @@ import subprocess
 from typing import Any
 import urllib.request
 
+from inference_contract import POLICY_IDENTITY_KEYS, validate_policy_health
 
-IDENTITY_KEYS = (
-    "provider",
-    "model_id",
-    "model_revision",
-    "adapter_source_sha256",
-)
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 ENV_PATTERN = re.compile(r"^[A-Z_][A-Z0-9_]*$")
 
@@ -46,7 +41,7 @@ def load_manifest(path: Path) -> list[dict[str, Any]]:
         if not isinstance(base_url_env, str) or not ENV_PATTERN.fullmatch(base_url_env):
             raise ValueError(f"models[{index}].base_url_env is invalid")
         if not isinstance(expected, dict) or any(
-            key not in IDENTITY_KEYS or not isinstance(value, str) or not value
+            key not in POLICY_IDENTITY_KEYS or not isinstance(value, str) or not value
             for key, value in expected.items()
         ):
             raise ValueError(f"models[{index}].expected_identity is invalid")
@@ -64,15 +59,8 @@ def load_manifest(path: Path) -> list[dict[str, Any]]:
 def validate_health(
     payload: Any, expected_identity: dict[str, str]
 ) -> dict[str, Any]:
-    identity = payload.get("policy_identity") if isinstance(payload, dict) else None
-    if (
-        not isinstance(payload, dict)
-        or payload.get("status") != "ok"
-        or payload.get("protocol_version") != 2
-        or not isinstance(identity, dict)
-        or any(not identity.get(key) for key in IDENTITY_KEYS)
-    ):
-        raise ValueError(f"provider does not implement inference protocol v2: {payload!r}")
+    validate_policy_health(payload)
+    identity = payload["policy_identity"]
     mismatches = {
         key: {"expected": expected, "actual": identity.get(key)}
         for key, expected in expected_identity.items()

@@ -22,6 +22,7 @@ import numpy as np
 import requests
 
 from episode_recorder import EpisodeRecorder, inspect_episode, json_safe
+from inference_contract import validate_policy_health, validate_server_timing
 
 
 CAMERA_KEYS = (
@@ -84,18 +85,10 @@ def policy_health(base_url: str) -> dict[str, Any]:
     response = requests.get(base_url.rstrip("/") + "/health", timeout=30)
     response.raise_for_status()
     payload = response.json()
-    identity = payload.get("policy_identity") if isinstance(payload, dict) else None
-    if (
-        not isinstance(payload, dict)
-        or payload.get("status") != "ok"
-        or payload.get("protocol_version") != 2
-        or not isinstance(identity, dict)
-        or not identity.get("provider")
-        or not identity.get("model_id")
-        or not identity.get("model_revision")
-        or not identity.get("adapter_source_sha256")
-    ):
-        raise RuntimeError(f"policy health response is not ready: {payload!r}")
+    try:
+        validate_policy_health(payload)
+    except ValueError as error:
+        raise RuntimeError(f"policy health response is not ready: {error}") from error
     return json_safe(payload)
 
 
@@ -269,21 +262,12 @@ def request_chunk(
             raise RuntimeError(
                 f"policy request id mismatch: sent={request_id} received={response_request_id}"
             )
-        server_timing = payload.get("timing_ms")
-        required_server_timings = (
-            "image_decode",
-            "policy_infer",
-            "total_before_serialize",
-            "serialization_first_pass",
-            "server_total_before_final_serialize",
-        )
-        if not isinstance(server_timing, dict) or any(
-            not isinstance(server_timing.get(key), (int, float))
-            for key in required_server_timings
-        ):
+        try:
+            server_timing = validate_server_timing(payload.get("timing_ms"))
+        except ValueError as error:
             raise RuntimeError(
-                f"policy response lacks required timing contract: {server_timing!r}"
-            )
+                f"policy response lacks required timing contract: {error}"
+            ) from error
         record["server_timing_ms"] = server_timing
         if "response" not in payload:
             raise RuntimeError(f"policy response missing action chunk: {payload}")
