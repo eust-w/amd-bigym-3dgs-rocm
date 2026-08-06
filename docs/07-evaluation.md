@@ -1,0 +1,65 @@
+# 闭环评测
+
+本项目采用 provider-neutral 的外部推理接口：BiGym 负责环境、观测、动作执行和轨迹记录；策略服务负责根据观测返回动作。主线不绑定某个供应商或某个 OpenPI 仓库。
+
+## 闭环数据流
+
+```mermaid
+sequenceDiagram
+    participant B as BiGym + 3DGS
+    participant P as Policy Provider
+    participant R as Recorder
+    B->>P: observation + task + history
+    P-->>B: action + model metadata
+    B->>B: env.step(action)
+    B->>R: transition + cameras + reward + done
+    Note over B,R: 重复直到 success/termination/timeout
+    R-->>R: atomic finalize + receipt + metrics
+```
+
+## 锁定依赖
+
+| 仓库 | 源分支 | 执行 commit | 作用 |
+| --- | --- | --- | --- |
+| `eust-w/amd-bigym-3dgs-rocm` | `main` | `f66b9150ca7cfd48746147dfa8326a2657ab309e` | 评测编排、3DGS 壳和验收规则 |
+| `WuChao-2024/bigym_plus` | `master` | `d12937686833467b5013ac47a834cf4b6f5a9d53` | 评测客户端和桌面录制基线 |
+| `NeuracoreAI/bigym` | `master` | `14beb30318ad14c5d6723175c2ee2281129792af` | 环境与任务语义基线 |
+| `nerfstudio-project/gsplat` | `main` | `4d3a3b69db4de0326f983ccf7b7b255271a17b01` | A800 参考渲染基线 |
+
+外部策略服务的 repo/branch/commit 不在 `main` 中硬编码。每次正式评测必须在 `/health` 响应和评测收据中记录服务端仓库、分支、完整 commit、模型权重 revision、精度、设备和启动参数。历史 `interence@eb1bdf844a20f02b2fcb419fa1d33ed4db06484f` 仅用于追溯旧供应商实现，不是当前主线依赖。
+
+## GPU 使用边界
+
+| 子过程 | 典型设备 | 说明 |
+| --- | --- | --- |
+| Gaussian 多相机渲染 | AMD GPU/ROCm 或参考 CUDA GPU | 每个环境步可能触发多次投影与光栅化 |
+| 策略推理 | 由外部 provider 报告 | 可能与渲染共卡、分卡或远程执行，不能从客户端推断 |
+| MuJoCo 物理步进 | CPU 为主 | 不应把整机 GPU 利用率归因于物理仿真 |
+| 编码、写盘、指标汇总 | CPU/媒体后端为主 | 视频编码是否用 GPU 取决于实际编码器配置 |
+
+当前主线没有同一时钟下的渲染 GPU 与策略 GPU 连续遥测，因此不能给出可靠的显存占用率和 GPU 使用率。正式评测必须分别记录客户端渲染卡与 provider 推理卡，不能把二者合并为一个百分比。
+
+## 完整评测收据
+
+每条正式 trajectory 至少包含：
+
+- task、seed、episode ID、开始/结束时间和终止原因。
+- 客户端 repo/branch/commit、BiGym commit、壳 revision、Sim(3) 配置。
+- provider repo/branch/commit、模型/权重 revision、设备和精度。
+- 每步 observation、policy request、action、reward、done/success。
+- 各相机视频或逐帧索引、帧数、时间戳范围和校验信息。
+- 渲染 GPU 与推理 GPU 的利用率/显存时序摘要。
+- 成功率、有效 episode 数、超时/崩溃/无请求等失败分类。
+
+## 通过条件
+
+1. 至少产生一次真实 policy request，并返回可执行动作。
+2. 环境完成连续 `observation -> policy -> action -> step` 循环，而不是只生成首帧或健康检查。
+3. 轨迹写入原子完成，帧数、transition 数和时间戳相互一致。
+4. 成功任务按任务语义达到 success；`benchmark_complete`、进程退出码 0 或 `success_rate: 0.0` 都不能单独证明完成。
+5. 正式报告区分成功、失败、无请求、超时和基础设施错误。
+
+## 当前结论
+
+`main` 当前具备评测协议和记录设计，但没有可接受的正式策略闭环收据。因此本项目当前不能声称闭环评测已完成；后续必须按上述收据重新执行并留证。
+
