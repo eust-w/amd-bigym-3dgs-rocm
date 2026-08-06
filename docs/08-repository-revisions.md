@@ -20,7 +20,7 @@
 | 壳导入/采集 | `NeuracoreAI/bigym` | `master` | `14beb30318ad14c5d6723175c2ee2281129792af` | BiGym 基线 |
 | 壳导入/采集 | 本项目 BiGym overlay | 随 `main` 基线 | `patches/bigym-3dgs-shell-and-collector.patch` | 3DGS、相机与采集接入 |
 | 闭环评测 | `WuChao-2024/bigym_plus` | `master` | `d12937686833467b5013ac47a834cf4b6f5a9d53` | 评测客户端基线 |
-| OpenDM 推理贡献 | `eust-w/amd-bigym-3dgs-opendm` | `upstream/external-inference-v2` | `394f77f6c321c61e6c3a857728abd651ac09fd13` | HTTP v2 provider；上游 PR `Kyrie-w8#1`，未合并前不作为正式执行锁 |
+| OpenDM 外部推理 | `Kyrie-w8/amd-bigym-3dgs-opendm` | `main` | `8f018b253d0fd2b41a4fa4a87610829eaca74c44` | HTTP v2 provider；由 PR `#1` 合并，可作为 OpenDM provider 执行锁 |
 | 历史推理实现 | `eust-w/amd-bigym-3dgs-rocm` | `interence` | `eb1bdf844a20f02b2fcb419fa1d33ed4db06484f` | 仅追溯，不是当前主线依赖 |
 
 ## 上游贡献分支

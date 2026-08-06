@@ -35,6 +35,6 @@
 | --- | --- | --- | --- | --- |
 | [Kyrie-w8/amd-bigym-3dgs-opendm#1](https://github.com/Kyrie-w8/amd-bigym-3dgs-opendm/pull/1) | `upstream/external-inference-v2` | `394f77f6c321c61e6c3a857728abd651ac09fd13` | 抽取共享 DM0.5 policy loader，并提供 `/health`、`/process_frame` 协议 v2 服务 | 上游 CI 命令本地通过，10 tests passed，主仓库 probe 返回 HTTP 200 和 `10x16` 动作 |
 
-该 PR 为 Ready、mergeable。GitHub Actions 当前需要上游维护者批准首次 fork workflow；这不是测试失败，PR 评论中已附本地 CI 和跨仓库协议验证证据。
+该 PR 已于 2026-08-06 合并到上游 `main`，合并 commit 为 `8f018b253d0fd2b41a4fa4a87610829eaca74c44`。贡献 head `394f77f6c321c61e6c3a857728abd651ac09fd13` 保留用于审计原始变更。
 
 完整分支改名映射和阶段依赖见 [阶段、仓库、分支与 commit 台账](08-repository-revisions.md)。
