@@ -63,3 +63,8 @@ sequenceDiagram
 
 `main` 当前具备评测协议和记录设计，但没有可接受的正式策略闭环收据。因此本项目当前不能声称闭环评测已完成；后续必须按上述收据重新执行并留证。
 
+## OpenPI 与 OpenDM 双模型编排
+
+`evaluation/bigym-3dgs/src/run_model_matrix.py` 提供严格的双模型评测入口。示例清单固定两个外部 provider：`openpi-jax` 与 `opendm-dm05`。编排器先校验并冻结两个 `/health` 身份，再顺序调用同一套 BiGym+3DGS 评测，最终生成 `model-matrix-summary.json`。
+
+该代码只包含 HTTP、模拟器执行、轨迹记录、校验和结果比较，不加载模型、不下载 checkpoint，也不包含 OpenPI/OpenDM 推理实现。OpenDM 的协议 v2 推理 adapter 在 `Kyrie-w8/amd-bigym-3dgs-opendm` 上游仓库维护。

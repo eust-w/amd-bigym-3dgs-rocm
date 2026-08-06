@@ -36,7 +36,7 @@ does not require provider-specific fields.
 - `text`: task instruction;
 - `states`: JSON array containing 16 finite numbers;
 - `request_id`: caller-generated unique string;
-- three PNG files named `images`, ordered as `head`, `left_wrist`,
+- three PNG files using the repeated field name `image`, ordered as `head`, `left_wrist`,
   `right_wrist`.
 
 The response must echo `request_id` and contain a finite `10 x 16` action chunk:
@@ -70,3 +70,21 @@ export INFERENCE_BASE_URL=http://127.0.0.1:7891
 
 The probe writes a machine-readable receipt. It proves protocol compatibility,
 not BiGym task success or visual quality.
+
+## Two-model evaluation
+
+The simulator can evaluate OpenPI and OpenDM without embedding either runtime.
+Start both external providers, set `OPENPI_INFERENCE_BASE_URL` and
+`OPENDM_INFERENCE_BASE_URL`, then run:
+
+```bash
+./evaluation/bigym-3dgs/bin/run_model_matrix.sh \
+  --manifest evaluation/bigym-3dgs/model-matrix.example.json \
+  --mode smoke \
+  --output-root /workspace/results/two-model-smoke
+```
+
+The matrix runner validates and freezes both provider identities, invokes the
+same simulator-side evaluator sequentially, and writes
+`model-matrix-summary.json`. It contains no model loader, checkpoint downloader
+or inference implementation.
