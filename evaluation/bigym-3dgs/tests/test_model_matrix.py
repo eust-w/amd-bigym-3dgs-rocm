@@ -3,11 +3,13 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 SOURCE = ROOT / "src" / "run_model_matrix.py"
 SPEC = importlib.util.spec_from_file_location("run_model_matrix", SOURCE)
 assert SPEC and SPEC.loader
@@ -58,6 +60,9 @@ class ModelMatrixTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "identity mismatch"):
             MATRIX.validate_health(payload, {"provider": "openpi-jax"})
+        payload["policy_identity"]["adapter_source_sha256"] = "invalid"
+        with self.assertRaisesRegex(ValueError, "64 lowercase hex"):
+            MATRIX.validate_health(payload, {})
 
     def test_runner_contains_no_model_runtime(self) -> None:
         source = SOURCE.read_text(encoding="utf-8")

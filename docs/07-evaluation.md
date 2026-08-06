@@ -63,6 +63,8 @@ sequenceDiagram
 
 `main` 当前具备评测协议和记录设计，但没有可接受的正式策略闭环收据。因此本项目当前不能声称闭环评测已完成；后续必须按上述收据重新执行并留证。
 
+评测摘要状态严格区分：执行、严格壳、真实 policy request 和 schema v2 完整录制均通过但人工三相机审核尚未完成时，状态只能是 `awaiting_visual_approval`；只有人工审核也通过后才允许写为 `evaluation_complete`。schema v1 或缺失 schema 的旧结果不能绕过完整录制门槛。
+
 ## OpenPI 与 OpenDM 双模型编排
 
 `evaluation/bigym-3dgs/src/run_model_matrix.py` 提供严格的双模型评测入口。示例清单固定两个外部 provider：`openpi-jax` 与 `opendm-dm05`。编排器先校验并冻结两个 `/health` 身份，再顺序调用同一套 BiGym+3DGS 评测，最终生成 `model-matrix-summary.json`。

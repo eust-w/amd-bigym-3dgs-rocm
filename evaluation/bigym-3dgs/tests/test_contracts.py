@@ -4,10 +4,12 @@ import importlib.util
 import json
 from pathlib import Path
 import struct
+import sys
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 
 def load_module(name: str, path: Path):
@@ -24,6 +26,9 @@ class ContractTests(unittest.TestCase):
         cls.lock = json.loads((ROOT / "VERSION_LOCK.json").read_text())
         cls.probe = load_module("probe_inference", ROOT / "src" / "probe_inference.py")
         cls.summary = load_module("summarize_results", ROOT / "src" / "summarize_results.py")
+        cls.inference_contract = load_module(
+            "inference_contract", ROOT / "src" / "inference_contract.py"
+        )
         cls.calibration = load_module(
             "calibrate_amd_shell", ROOT / "src" / "calibrate_amd_shell.py"
         )
@@ -83,14 +88,40 @@ class ContractTests(unittest.TestCase):
 
     def test_probe_enforces_v2_identity_and_timing(self) -> None:
         source = (ROOT / "src" / "probe_inference.py").read_text()
-        self.assertIn('"provider"', source)
-        self.assertIn('"model_id"', source)
-        self.assertIn('"model_revision"', source)
+        self.assertIn("validate_policy_health", source)
+        self.assertIn("validate_server_timing", source)
         self.assertIn("request_id", source)
-        self.assertIn("server_total_before_final_serialize", source)
+
+    def test_v2_identity_and_timings_are_strict(self) -> None:
+        health = {
+            "status": "ok",
+            "protocol_version": 2,
+            "policy_identity": {
+                "provider": "fixture",
+                "model_id": "fixture-model",
+                "model_revision": "fixture-revision",
+                "adapter_source_sha256": "a" * 64,
+            },
+        }
+        self.assertIs(self.inference_contract.validate_policy_health(health), health)
+        health["policy_identity"]["adapter_source_sha256"] = "not-a-sha256"
+        with self.assertRaisesRegex(ValueError, "64 lowercase hex"):
+            self.inference_contract.validate_policy_health(health)
+
+        valid_timing = {
+            key: 0.0 for key in self.inference_contract.SERVER_TIMING_KEYS
+        }
+        self.assertIs(
+            self.inference_contract.validate_server_timing(valid_timing), valid_timing
+        )
+        for invalid in (-1.0, float("nan"), float("inf"), True):
+            malformed = dict(valid_timing, policy_infer=invalid)
+            with self.assertRaisesRegex(ValueError, "finite and non-negative"):
+                self.inference_contract.validate_server_timing(malformed)
 
     def test_summary_preserves_failures(self) -> None:
         results = {
+            "schema_version": 2,
             "status": "benchmark_complete",
             "task": "DishwasherUnloadCutleryLong",
             "n_episodes": 3,
@@ -99,20 +130,29 @@ class ContractTests(unittest.TestCase):
             "policy_requests": 7,
             "policy_latency_ms": {"p50": 210.0},
             "visual_shell": {"strict": True, "runtime_passed": True},
+            "recording": {
+                "mode": "full",
+                "episodes_terminal": 3,
+                "episodes_interrupted": 0,
+            },
             "episodes": [
                 {"success": True, "failure_reason": None},
                 {"success": False, "failure_reason": "policy_timeout"},
                 {"success": False, "failure_reason": "max_steps_without_success"},
             ],
         }
-        summary = self.summary.summarize(results, 3)
-        self.assertEqual(summary["status"], "evaluation_complete")
+        validation = {"status": "recording_valid", "expected_episodes": 3}
+        summary = self.summary.summarize(
+            results, 3, recording_validation=validation
+        )
+        self.assertEqual(summary["status"], "awaiting_visual_approval")
         self.assertEqual(summary["failure_categories"]["policy_timeout"], 1)
         self.assertFalse(summary["gates"]["human_visual_review"])
 
-        reviewed = self.summary.summarize(results, 3, "passed")
+        reviewed = self.summary.summarize(results, 3, "passed", validation)
         self.assertTrue(reviewed["gates"]["human_visual_review"])
         self.assertEqual(reviewed["human_visual_review_status"], "passed")
+        self.assertEqual(reviewed["status"], "evaluation_complete")
 
     def test_schema_v2_requires_full_recording_gate(self) -> None:
         results = {
@@ -140,8 +180,16 @@ class ContractTests(unittest.TestCase):
         complete = self.summary.summarize(
             results, 1, recording_validation=validation
         )
-        self.assertEqual(complete["status"], "evaluation_complete")
+        self.assertEqual(complete["status"], "awaiting_visual_approval")
         self.assertTrue(complete["gates"]["full_evaluation_recording"])
+        reviewed = self.summary.summarize(results, 1, "passed", validation)
+        self.assertEqual(reviewed["status"], "evaluation_complete")
+
+        legacy = dict(results)
+        legacy.pop("schema_version")
+        rejected = self.summary.summarize(legacy, 1, "passed", validation)
+        self.assertEqual(rejected["status"], "evaluation_failed")
+        self.assertFalse(rejected["gates"]["full_evaluation_recording"])
 
     def test_incomplete_episode_count_fails(self) -> None:
         results = {
@@ -157,10 +205,7 @@ class ContractTests(unittest.TestCase):
 
     def test_evaluator_accepts_any_v2_provider_identity(self) -> None:
         evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()
-        self.assertIn('identity.get("provider")', evaluator)
-        self.assertIn('identity.get("model_id")', evaluator)
-        self.assertIn('identity.get("model_revision")', evaluator)
-        self.assertIn('identity.get("adapter_source_sha256")', evaluator)
+        self.assertIn("validate_policy_health", evaluator)
 
     def test_evaluator_can_reuse_verified_prebuilt_hip_gsplat(self) -> None:
         evaluator = (ROOT / "src" / "eval_bigym_3dgs.py").read_text()

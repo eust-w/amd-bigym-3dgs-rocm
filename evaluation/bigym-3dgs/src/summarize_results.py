@@ -40,8 +40,8 @@ def summarize(
     )
     recording = results.get("recording")
     recording_pass = bool(
-        results.get("schema_version", 1) < 2
-        or (
+        results.get("schema_version") == 2
+        and (
             isinstance(recording, dict)
             and recording.get("mode") == "full"
             and recording.get("episodes_terminal") == expected_episodes
@@ -52,13 +52,16 @@ def summarize(
         )
     )
     human_visual_pass = human_visual_review == "passed"
+    execution_pass = structural_pass and visual_shell_pass and policy_pass and recording_pass
+    if execution_pass and human_visual_pass:
+        status = "evaluation_complete"
+    elif execution_pass and human_visual_review == "pending":
+        status = "awaiting_visual_approval"
+    else:
+        status = "evaluation_failed"
     return {
         "schema_version": 2,
-        "status": (
-            "evaluation_complete"
-            if structural_pass and visual_shell_pass and policy_pass and recording_pass
-            else "evaluation_failed"
-        ),
+        "status": status,
         "task": results.get("task"),
         "episodes": expected_episodes,
         "successes": int(results.get("successes", 0)),
@@ -82,9 +85,14 @@ def summarize(
         "claim_boundary": (
             "evaluation execution, full trajectory recording and human three-camera visual "
             "review are complete"
-            if human_visual_pass and recording_pass
-            else "evaluation execution is structurally complete; full-recording and visual "
-            "publication gates must both pass before the run is accepted"
+            if status == "evaluation_complete"
+            else (
+                "evaluation execution and full trajectory recording are complete; human "
+                "three-camera visual approval is still required"
+                if status == "awaiting_visual_approval"
+                else "one or more execution, recording, policy, visual-shell or human-review "
+                "gates failed"
+            )
         ),
     }
 

@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Any
 
 from episode_recorder import DEFAULT_CAMERA_NAMES, inspect_episode
+from inference_contract import (
+    is_nonnegative_finite_number,
+    validate_policy_health,
+    validate_server_timing,
+)
 
 
 TERMINAL_STATES = {"complete", "failed"}
@@ -194,24 +199,16 @@ def validate_episode(task_dir: Path, episode_index: int) -> dict[str, Any]:
         else:
             linked_request_ids.add(str(request_record["request_id"]))
             for timing_field in ("image_encode_ms", "http_round_trip_ms"):
-                if not isinstance(request_record.get(timing_field), (int, float)):
+                if not is_nonnegative_finite_number(request_record.get(timing_field)):
                     errors.append(
-                        f"transition {record.get('step_index')} lacks {timing_field}"
+                        f"transition {record.get('step_index')} has invalid {timing_field}"
                     )
             server_timing = request_record.get("server_timing_ms")
-            required_server_timings = (
-                "image_decode",
-                "policy_infer",
-                "total_before_serialize",
-                "serialization_first_pass",
-                "server_total_before_final_serialize",
-            )
-            if not isinstance(server_timing, dict) or any(
-                not isinstance(server_timing.get(key), (int, float))
-                for key in required_server_timings
-            ):
+            try:
+                validate_server_timing(server_timing)
+            except ValueError:
                 errors.append(
-                    f"transition {record.get('step_index')} lacks server timing evidence"
+                    f"transition {record.get('step_index')} has invalid server timing evidence"
                 )
 
     result = manifest.get("result") or {}
@@ -342,6 +339,10 @@ def validate_task_dir(task_dir: Path, expected_episodes: int) -> dict[str, Any]:
     camera_contract = results.get("observation_contract", {}).get("cameras", {})
     if set(camera_contract) != set(DEFAULT_CAMERA_NAMES):
         top_level_errors.append("results observation camera contract is incomplete")
+    try:
+        validate_policy_health(results.get("policy_health"))
+    except ValueError as error:
+        top_level_errors.append(f"results policy_health is invalid: {error}")
 
     joined_entries: list[dict[str, Any]] = []
     for report in episode_reports:

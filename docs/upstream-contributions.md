@@ -1,6 +1,6 @@
 # 上游贡献
 
-本项目把与 AMD/BiGym 交付无关的通用改进拆成小型上游 PR。所有现行分支均已移除 `agent/` 前缀，PR 状态于 2026-08-06 核验为 open、Ready、mergeable。
+本项目把与 AMD/BiGym 交付无关的通用改进拆成小型上游 PR。所有现行分支均已移除 `agent/` 前缀；各 PR 的 open/merged 状态以对应链接和分节说明为准。
 
 ## BiGym
 
