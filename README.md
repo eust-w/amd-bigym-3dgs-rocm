@@ -64,6 +64,12 @@ The source contact sheet is provided for provenance. The downloadable PLY and
 BiGym shell configuration in this README always use the AMD Hugging Face
 revision shown below.
 
+The 32-episode LeRobot replay collection is recorded in
+`data/manifests/cutlery32-dataset.public.json`, whose manifest itself shows
+`runtime: "A800 CUDA"` and `status: "technical_pass_visual_approval_pending"`.
+So the manifest is a separate A800 collection evidence only, not an AMD ROCm
+training proof.
+
 ## AMD evidence boundary
 
 | Artifact | Current claim |

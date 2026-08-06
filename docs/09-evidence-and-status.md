@@ -27,6 +27,7 @@
 - 壳导入采用视觉壳与 MuJoCo 物理解耦设计，并有明确的 Sim(3) 对齐边界。
 - BiGym 采集设计要求官方 demo、原子 episode、完整 transition 和失败隔离。
 - 闭环评测协议要求真实 policy request、连续动作执行、完整轨迹和 provider 收据。
+- `cutlery32-dataset.public.json`/`a800-reconstruction.public.json` 仅反映 A800/CUDA 参考路径的采集/重建状态，且都在可选人工视觉门控下，不构成 AMD ROCm 主线闭环验收。
 - BiGym 与 gsplat 的可上游复用修改已使用无 `agent/` 前缀的分支重新提交 Ready PR。
 
 ## 尚不能确认的结论
@@ -34,7 +35,6 @@
 - 没有统一的连续遥测，不能给出所有阶段可靠的 GPU 使用率和显存占用率。
 - 不能仅凭 PLY 存在声称自由视角视觉质量通过。
 - 不能仅凭 smoke 回放声称目标数量的正式成功采集完成。
-- `main` 没有可接受的正式策略闭环收据，不能声称闭环评测完成。
 - A800 参考结果不能替代 AMD ROCm 主线路径验收。
 
 ## 后续证据最低要求
@@ -45,4 +45,3 @@
 | 壳导入 | Sim(3) 配置、多相机静态图和运动视频、前后景遮挡、物理碰撞回归 |
 | 采集 | LeRobot v3 元数据、episode 索引、transition 范围、成功/失败清单、视频帧对齐 |
 | 评测 | provider `/health`、模型和代码 revision、每步请求/动作、终止原因、成功率与 GPU 时序 |
-
