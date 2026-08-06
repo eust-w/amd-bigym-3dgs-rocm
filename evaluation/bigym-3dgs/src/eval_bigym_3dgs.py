@@ -119,7 +119,7 @@ def append_recording_step(
 
 
 def install_prebuilt_gsplat_backend() -> dict[str, str] | None:
-    """Load an existing HIP extension without triggering a CUDA JIT rebuild."""
+    """Load an existing prebuilt extension without triggering backend JIT rebuild."""
 
     build_dir_value = os.environ.get("GSPLAT_PREBUILT_DIR")
     if not build_dir_value:

@@ -8,7 +8,7 @@ flowchart TB
     D3[Public manifests and synthetic fixture]
   end
 
-  subgraph Reconstruction[A800 reference branch]
+  subgraph Reconstruction[Cross-platform reference branch]
     R1[Safe extraction]
     R2[Known-pose COLMAP + SIFT]
     R3[default and MCMC 30k]

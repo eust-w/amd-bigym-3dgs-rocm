@@ -1,64 +1,78 @@
-# 3D 重建
+# 3D reconstruction
 
-本项目保留两条重建路径：AMD W7900D/ROCm 是项目主路径，A800/CUDA 仅作为参考实现和对照证据。
+This project keeps two reconstruction routes: AMD W7900D/ROCm is the main production path, while reference path provides cross-platform comparison.
 
-## 输入与输出
+## Inputs and outputs
 
 ```mermaid
 flowchart LR
-    A["DL3DV 原始帧"] --> B["相机标定/稀疏点云"]
-    B --> C["OpenSplat ROCm 训练"]
+    A["DL3DV raw frames"] --> B["Camera calibration/sparse point cloud"]
+    B --> C["OpenSplat ROCm training"]
     C --> D["Gaussian PLY"]
-    D --> E["属性/完整性检查"]
-    E --> F["清洗与视觉验收"]
-    F --> G["Hugging Face 壳发布"]
+    D --> E["Attribute and integrity checks"]
+    E --> F["Cleaning and visual acceptance"]
+    F --> G["HF shell release"]
 ```
 
-输入是 DL3DV 场景的图像、相机内外参和稀疏点云；输出是包含位置、尺度、旋转、不透明度和球谐系数的 Gaussian PLY。重建产物要进入 BiGym，必须继续经过清洗、坐标对齐和视觉验收。
+Inputs are DL3DV scene images, camera intrinsics/extrinsics, and sparse point cloud; outputs are Gaussian PLY containing position, scale, rotation, opacity, and SH coefficients. Any reconstruction artifact must continue through cleaning, Sim(3) alignment, and visual acceptance before BiGym use.
 
-## AMD 主路径
+## AMD main route
 
-| 项目 | 锁定值 |
+| Item | Locked value |
 | --- | --- |
-| 编排仓库 | `eust-w/amd-bigym-3dgs-rocm` |
-| 运行基线 | `main@f66b9150ca7cfd48746147dfa8326a2657ab309e` |
-| 重建引擎 | `pierotofy/OpenSplat` |
-| 上游源分支 | `main` |
-| 执行 commit | `9fb62fde8b7b8c416121d3cbdcda278ffd9682f7`，以 detached HEAD 运行 |
-| 本项目补丁 | `reconstruction/patches/opensplat-rocm-home.patch`、`reconstruction/patches/opensplat-force-rocm-include.patch` |
-| 数据 revision | `DL3DV/DL3DV-ALL-2K@e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c` |
-| 发布 revision | `eustance/amd-bigym-3dgs-kitchen-shell@amd-rocm-w7900d-20260804` |
+| Orchestration repo | `eust-w/amd-bigym-3dgs-rocm` |
+| Run baseline | `main@f66b9150ca7cfd48746147dfa8326a2657ab309e` |
+| Reconstruction engine | `pierotofy/OpenSplat` |
+| Upstream source branch | `main` |
+| Execution commit | `9fb62fde8b7b8c416121d3cbdcda278ffd9682f7`, run as detached HEAD |
+| Project patches | `reconstruction/patches/opensplat-rocm-home.patch`, `reconstruction/patches/opensplat-force-rocm-include.patch` |
+| Data revision | `DL3DV/DL3DV-ALL-2K@e035bc5efd8dc5b2fa1e704cb2b1086fd9ec2c5c` |
+| Release revision | `eustance/amd-bigym-3dgs-kitchen-shell@amd-rocm-w7900d-20260804` |
 
-该路径的 GPU 工作包括 Gaussian 参数优化、投影、排序、光栅化、可见性计算和梯度反传。图像准备、清单生成、PLY 属性检查、文件打包和文档生成主要使用 CPU。
+This route's GPU work includes Gaussian parameter optimization, projection, sorting, rasterization, visibility, and gradient backpropagation. Image prep, manifest generation, PLY checks, packaging, and document generation are primarily CPU.
 
-## A800 参考路径
+## Reference route
 
-| 仓库 | 源分支 | 执行 commit | 用途 |
+| Repo | Source branch | Execution commit | Purpose |
 | --- | --- | --- | --- |
-| `eust-w/amd-bigym-3dgs-rocm` | `a800` | `b35e318f4dfcfabaaeedd8347c6101384cd7c14d` | CUDA 参考编排与证据 |
-| `nerfstudio-project/gsplat` | `main` | `4d3a3b69db4de0326f983ccf7b7b255271a17b01` | 参考重建/渲染，detached HEAD |
-| `discoverse-dev/DISCOVERSE` | `main` | `d67f47c084aba0e0cf422a8725235f8b9238655a` | 参考运行时集成，detached HEAD |
+| `eust-w/amd-bigym-3dgs-rocm` | `reference` | `b35e318f4dfcfabaaeedd8347c6101384cd7c14d` | Cross-platform comparison orchestration and reference evidence |
+| `nerfstudio-project/gsplat` | `main` | `4d3a3b69db4de0326f983ccf7b7b255271a17b01` | Reference reconstruction/rendering, detached HEAD |
+| `discoverse-dev/DISCOVERSE` | `main` | `d67f47c084aba0e0cf422a8725235f8b9238655a` | Reference runtime integration, detached HEAD |
 
-`a800` 是参考分支，不是 AMD 主线的替代品。A800 结果可用于排查数据、相机或视觉质量问题，但不能作为 ROCm 运行成功的证据。
+The `reference` branch is used only for path consistency checks, parameter review, and cross-platform comparison; it is not a substitute for the AMD mainline.
+Reference branch results support troubleshooting for data, camera, or visual quality problems, but cannot replace ROCm mainline proof.
 
-## GPU 与显存观测
+## GPU + VRAM observations
 
-仓库现有证据能够确认 GPU 路径和设备类型，但没有形成覆盖每一阶段的统一时序遥测。因此本文不把单点峰值伪装成稳定占用率。正式复测时应同时记录：
+Data is collected from [`AMD Radeon 3DGS x BiGym GPU and Memory Analysis (2026-08-06)`](https://horizonrobotics.feishu.cn/wiki/OD83w2tcgid39wk3hCgc2lyynkd) and is used to supplement historical-stage evidence. These values are **historical measurements + scenario estimates** from different image resolutions, sample counts, and concurrency settings; they should not be merged as a single production baseline.
 
-- `rocm-smi --showuse --showmemuse --showpower --showtemp --json` 的周期采样。
-- 训练配置、图像数量/分辨率、Gaussian 数量、迭代数和 batch 行为。
-- GPU busy 的中位数、P95 和峰值；VRAM 已用量的中位数和峰值。
-- 采样开始/结束时间，并与训练日志中的迭代区间对齐。
+### Per-stage observed range (historical/estimated)
 
-在没有同一配置下的连续采样前，只能定性判断：重建训练和 3DGS 渲染是高 GPU 环节；数据下载、COLMAP 前后处理、PLY 清洗与打包通常不是持续高 GPU 环节。
+| Stage | Evidence type | VRAM | GPU utilization | Notes |
+| --- | --- | --- | --- | --- |
+| Server idle snapshot | On-site measurement, 2026-08-06 | `991,496,616 B` (~`0.92 GiB`, ~`1.9% / 48GB`) | `6%` | No reconstruction/collection/evaluation processes running; only an idle baseline. |
+| Historical OpenSplat ROCm training | Historical measurement, mixed scale | ~`2.1 GiB` | Peak around `97%` | `332` images @`960x540`, `10k` steps, `816,948 Gaussians`; cannot be extrapolated as exact peak for current `1080p 15k` run. |
+| Current OpenSplat training | Historical measurement, mixed scale | ~`3-8 GiB`, `6%-17%` | Main training loop around `80%-100%` | `352` images @`1080p`, `1.46M Gaussians`; requires direct sampling to confirm. |
+| BiGym triple-camera gsplat + EGL | Historical measurement, mixed scale | ~`3-8 GiB`, `6%-17%` | ~`30%-90%` | Rendering peaks interleave with CPU encoding and disk write phases. |
+| Closed-loop evaluator endpoint | Historical measurement, mixed scale | ~`3-8 GiB`, `6%-17%` | ~`20%-80%` | HTTP waits and policy latency pull down average busy. |
+| External 7B BF16 VLA reference | Deployment scenario estimate | ~`16-28 GiB`, `33%-58%` | ~`50%-100%` during requests | Model is not in this repo; quantization, batch size, and KV cache significantly change values. |
+| One W7900D shared by simulator + 7B inference | Deployment scenario estimate | ~`19-36 GiB` | Combined ~`50%-100%` | Must pass shared-GPU smoke memory gate first. |
 
-## 验收门槛
+Formal re-measurement requires at minimum:
 
-1. 进程确实加载 ROCm/HIP 后端，而不是 CPU fallback。
-2. 训练日志包含连续有效迭代，并成功写出最终 PLY。
-3. PLY 属性、点数、文件大小和哈希可审计。
-4. 至少完成训练视角和自由视角渲染检查；仅“PLY 可解析”不代表视觉质量通过。
-5. 发布 revision 与本地验收产物一一对应。
+- Periodic sampling with `rocm-smi --showuse --showmemuse --showpower --showtemp --json` (aligned to training logs).
+- Train config, image count/resolution, Gaussian count, iteration count, batch trajectory, and sampling interval.
+- GPU busy and VRAM median, P95, and peak with alignment to `step`, frame index, and episode boundaries.
+- Separate sampling scope for "inference GPU" and "render GPU" in shared-GPU scenarios to avoid conflating workloads.
 
-完整版本关系见 [阶段、仓库、分支与 commit 台账](08-repository-revisions.md)。
+Without continuous sampling under identical configuration, only qualitative conclusions are possible: reconstruction training and 3DGS rendering are high-GPU stages; dataset download, COLMAP pre/post-processing, PLY cleaning, and packaging are generally not sustained high-GPU stages.
 
+## Acceptance gates
+
+1. The process must really load ROCm/HIP backend, not CPU fallback.
+2. Training logs must contain continuous valid iterations and successfully write final PLY.
+3. PLY attributes, point count, file size, and hashes must be auditable.
+4. At least training-view and free-view rendering checks must pass; parsing a valid PLY alone does not imply visual acceptance.
+5. Release revision and local acceptance artifacts must be one-to-one.
+
+For full versioning, see [phase, repository, branch, and commit ledger](08-repository-revisions.md).

@@ -1,38 +1,38 @@
-# 端到端实现与坐标系
+# End-to-end implementation and coordinate systems
 
-## 为什么把 3DGS 做成“视觉壳”
+## Why 3DGS is split into a visual shell
 
-MuJoCo 擅长稳定、可验证的机器人与物体物理；3DGS 擅长真实环境外观。把两者拆开后，环境背景不进入 MJCF，因而不会影响碰撞、接触、reward 或控制轨迹。
+MuJoCo is strong at stable, verifiable robot and object physics; 3DGS is strong at realistic environmental appearance. After separation, visual background does not enter MJCF, so it does not affect collision, contact, reward, or control trajectories.
 
-每个相机帧的处理顺序是：
+Per-camera frame processing order is:
 
-1. 从 MuJoCo 取得相机外参、内参、RGB 和 segmentation。
-2. 用 `T_gaussian_to_mujoco` 的逆变换把 MuJoCo 相机转换到 Gaussian 坐标系。
-3. gsplat 在 AMD GPU 上渲染背景。
-4. 依据 segmentation 把机器人、工作台、任务物体覆盖回背景。
-5. strict 模式记录渲染次数和最后错误；任意 3DGS 错误直接终止正式采集。
+1. Read camera extrinsics, intrinsics, RGB, and segmentation from MuJoCo.
+2. Transform MuJoCo camera poses to Gaussian coordinates using the inverse of `T_gaussian_to_mujoco`.
+3. Render background with gsplat on AMD GPU.
+4. Composite robot, workbench, and task objects back onto the background by segmentation.
+5. Strict mode records render counts and last error; any 3DGS error immediately terminates official collection.
 
-## Sim(3) 对齐
+## Sim(3) alignment
 
-配置中的 4×4 变换把 Gaussian 世界映射到 MuJoCo 世界：
+The 4x4 transform in configuration maps Gaussian world coordinates into MuJoCo world coordinates:
 
 ```text
 p_mujoco = s R p_gaussian + t
 ```
 
-这里不仅要“看起来对齐”，还需要独立检查：
+The result must pass independent checks, not visual alignment only:
 
-- 地面法向保持竖直；
-- 房间高度和相对尺度在合理范围；
-- head / left wrist / right wrist 相机距离训练相机轨迹不过远；
-- 旋转偏差不过大；
-- floor 高度不因外观搜索而改变。
+- Keep ground normal vertical.
+- Keep room height and relative scale in valid range.
+- Keep head / left wrist / right wrist cameras near the training camera trajectory.
+- Keep rotation deviation bounded.
+- Do not change floor height via appearance search.
 
-本次外观搜索只调水平平移与 yaw，最终再选择完整 H1 可见的固定 external 相机。实测 profile 保存在 `configs/`，其中也保留了视觉质量边界。
+This appearance search only tuned horizontal translation and yaw, then selected one fixed external camera with full H1 visibility. The measured profile is stored in `configs/`, and visual-quality boundaries are retained there.
 
-## 物理隔离验收
+## Physics isolation acceptance
 
-收据必须记录：
+Receipts must record:
 
 ```json
 {
@@ -44,4 +44,4 @@ p_mujoco = s R p_gaussian + t
 }
 ```
 
-这三个数字只能证明 3DGS 没有进入物理世界，不能替代视觉验收。
+These three values only prove 3DGS did not enter the physics world and cannot replace visual acceptance.

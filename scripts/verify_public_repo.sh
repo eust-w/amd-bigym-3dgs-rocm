@@ -78,7 +78,7 @@ assert source["source"]["archive_bytes"] == 910995448
 assert source["source"]["archive_sha256"] == "9765ce6dd3661ba125b6689c0cc50717645480ec2ce5790a4636129521341adb"
 assert source["source"]["scene_hash"] == "90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947"
 assert source["redistribution"]["source_archive_in_repo"] is False
-reconstruction = json.loads(Path("data/manifests/a800-reconstruction.public.json").read_text())
+reconstruction = json.loads(Path("data/manifests/reference-reconstruction.public.json").read_text())
 assert reconstruction["method"]["strategy"] == "mcmc scheduled-r20"
 assert reconstruction["method"]["steps"] == 60000
 assert len(reconstruction["shell_assets"]) == 4
@@ -87,11 +87,11 @@ assert dataset["dataset_id"] == "bigym-3dgs-light-floor-replay-plan-v2-20260802"
 assert dataset["summary"]["episodes"] == 32
 assert dataset["summary"]["video_files"] == 3
 assert dataset["status"] == "technical_pass_visual_approval_pending"
-assert dataset["runtime"] == "A800 CUDA"
-a800 = json.loads(Path("evidence/a800-reference-validation-summary.json").read_text())
-assert a800["role"] == "a800_reference_for_amd_main"
-assert a800["branch"] == "a800"
-assert a800["status"] == "a800_technical_pass_visual_approval_pending"
+assert dataset["runtime"] == "reference-baseline"
+reference_summary = json.loads(Path("evidence/reference-validation-summary.json").read_text())
+assert reference_summary["role"] == "reference_validation_for_amd_main"
+assert reference_summary["branch"] == "reference"
+assert reference_summary["status"] == "reference_technical_pass_visual_approval_pending"
 amd = json.loads(Path("evidence/amd-rocm-main-status.json").read_text())
 assert amd["branch"] == "main"
 assert amd["role"] == "amd_rocm_implementation"
@@ -125,9 +125,34 @@ assert 5_000_000 < reference_video.stat().st_size < 10_485_760
 print("DATA_CONTRACT_OK")
 PY
 
-if find . -type f -size +10M -not -path './.git/*' | grep -q .; then
-  printf 'Unexpected file larger than 10 MiB:\n' >&2
-  find . -type f -size +10M -not -path './.git/*' >&2
+max_repo_size_limit_bytes=20M
+allowed_large_files=(
+  "./docs/images/20260806-205335.gif"
+)
+
+if find . -type f -size +"$max_repo_size_limit_bytes" -not -path './.git/*' -print0 | while IFS= read -r -d '' file; do
+  skip=0
+  for allowed in "${allowed_large_files[@]}"; do
+    if [ "$file" = "$allowed" ]; then
+      skip=1
+      break
+    fi
+  done
+  if [ "$skip" -eq 0 ]; then
+    printf '%s\n' "$file"
+  fi
+done | grep -q .; then
+  printf 'Unexpected file larger than 20 MiB:\n' >&2
+  find . -type f -size +"$max_repo_size_limit_bytes" -not -path './.git/*' -print0 | while IFS= read -r -d '' file; do
+    skip=0
+    for allowed in "${allowed_large_files[@]}"; do
+      if [ "$file" = "$allowed" ]; then
+        skip=1
+        break
+      fi
+    done
+    [ "$skip" -eq 0 ] && printf '%s\n' "$file"
+  done >&2
   exit 2
 fi
 

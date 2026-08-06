@@ -24,7 +24,7 @@ index fe59cde..efb57b8 100644
 +```
 +
 +The shell adds no MJCF body, geom, collision, or contact. See the
-+[visual-shell guide](doc/visual-shell.md) for CUDA dependencies, profile quality
++[visual-shell guide](doc/visual-shell.md) for backend dependencies, profile quality
 +limits, custom scene alignment, offline installation, and asset licensing.
 +The dataset/evaluation utilities under `d/` also expose the backward-compatible
 +`bigym-plus-3` camera set and a formal `bigym-plus-4` set that appends a fixed

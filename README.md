@@ -12,13 +12,13 @@
     <a href="https://huggingface.co/datasets/eustance/amd-bigym-3dgs-kitchen-shell/tree/amd-rocm-w7900d-20260804"><img src="https://img.shields.io/badge/Hugging%20Face-AMD%20artifacts-FFD21E?style=flat-square" alt="Hugging Face AMD artifacts"></a>
   </p>
   <p>
-    <a href="#bigym--3dgs-runtime-demo">Demo</a> ·
-    <a href="#reproduced-on-amd-radeon">AMD result</a> ·
-    <a href="#amdrocm-quick-start">Quick start</a> ·
-    <a href="#repository-checks">Validation</a> ·
+    <a href="#bigym--3dgs-runtime-demo">Demo</a> |
+    <a href="#reproduced-on-amd-radeon">AMD result</a> |
+    <a href="#amdrocm-quick-start">Quick start</a> |
+    <a href="#repository-checks">Validation</a> |
     <a href="https://github.com/eust-w/amd-bigym-3dgs-rocm/tree/main">AMD/ROCm main</a>
   </p>
-  <p><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a></p>
+  <p><a href="README.md">English</a> | <a href="README.zh-CN.md">Simplified Chinese</a></p>
 </div>
 
 This is the end-to-end AMD Radeon/ROCm implementation for reconstructing a
@@ -30,6 +30,9 @@ produced on AMD Radeon PRO W7900D.
 ## BiGym + 3DGS runtime demo
 
 [![Animated BiGym robot and dishwasher workbench demo inside the 3DGS kitchen](docs/images/bigym-3dgs-runtime-demo.gif)](docs/videos/bigym-3dgs-shell-reference.mp4)
+
+![Local download link for Horizon FEISHU 20260806-205335 gif](docs/images/20260806-205335.gif)
+This GIF is used for around/free-view environment inspection.
 
 The six-second preview plays directly in GitHub. Click it to watch the full
 [31-second, `1696x960` MP4](docs/videos/bigym-3dgs-shell-reference.mp4), with
@@ -64,6 +67,13 @@ The source contact sheet is provided for provenance. The downloadable PLY and
 BiGym shell configuration in this README always use the AMD Hugging Face
 revision shown below.
 
+The 32-episode LeRobot replay collection is recorded in
+`data/manifests/cutlery32-dataset.public.json` and is marked with
+`status: "technical_pass_visual_approval_pending"`, indicating a pre-production
+dataset gate state. It is a separate reference collection artifact and is not an
+AMD ROCm training proof. Its runtime field is a non-ROCm reference execution
+profile.
+
 ## AMD evidence boundary
 
 | Artifact | Current claim |
@@ -73,7 +83,7 @@ revision shown below.
 | BiGym collection | not promoted by the reconstruction receipt; three-camera collection remains a separate acceptance stage |
 
 The reconstruction has been reproduced on Radeon. This does **not** claim that
-the separate 32-episode collection has also been replayed on AMD: downstream
+the separate 32-episode collection has also been fully accepted as the AMD closed-loop dataset: downstream
 acceptance still requires native gsplat rasterization, strict three-camera
 replay, full-video decode and separate human visual review.
 

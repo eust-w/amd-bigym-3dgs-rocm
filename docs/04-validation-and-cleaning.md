@@ -1,24 +1,24 @@
-# 完整性验收与异常点清理
+# Integrity checks and outlier cleaning
 
-## LeRobot v3 全量验收
+## LeRobot v3 full acceptance check
 
-`scripts/validate_lerobot_v3_collection.py` 会验证：
+`scripts/validate_lerobot_v3_collection.py` verifies:
 
-- `meta/info.json` 的 `total_episodes=32`；
-- data Parquet 为 32 个、episode metadata 为 32 行；
-- `episode_index=0..31` 且 frame index 连续；
-- state/action 都是 16 维且没有 NaN/Inf；
-- receipt 中 32 个 UUID 唯一、全部 saved、全部 reward=1；
-- 三个 camera key 各有 32 个 H.264 视频；
-- codec、尺寸、20 fps、帧数、时长和逐帧 decode 全通过；
-- 3DGS strict renderer 的渲染计数精确；
-- 自动生成 4 episode × 3 camera 联系表和 `SHA256SUMS`。
+- `meta/info.json` has `total_episodes=32`.
+- 32 Parquet chunks and 32 episode metadata rows.
+- `episode_index=0..31` and continuous frame indexes.
+- `state` and `action` are 16-dimensional and contain no NaN/Inf.
+- Receipt contains 32 unique UUIDs, all saved, and all `reward=1`.
+- Three camera keys each include 32 H.264 videos.
+- Codec, dimensions, 20 fps, frame count, duration, and per-frame decode all pass.
+- Exact strict 3DGS renderer render-count checks pass.
+- Auto-generated `4 x 3` camera-episode contact sheet and `SHA256SUMS`.
 
-一个 Parquet chunk 或视频目录看起来“只有一个文件”并不代表只有一个 episode；判断必须以 episode metadata、episode_index 和 row ranges 为准。
+A single Parquet chunk or video directory looking like "one file" does not imply one episode; episode_count must be decided from episode metadata, `episode_index`, and row ranges.
 
-## 非破坏式 Gaussian 清理
+## Non-destructive Gaussian cleaning
 
-清理规则同时使用位置、尺度和 alpha：
+Cleaning rules combine position, scale, and alpha:
 
 ```text
 keep = finite
@@ -28,6 +28,6 @@ keep = finite
      & sigmoid(opacity) >= min_alpha
 ```
 
-输出必须是新路径；脚本发现 output 与 input 相同会直接拒绝。每层生成 JSON manifest，记录输入/输出 SHA-256、Gaussian 数和每种移除原因。
+Output must use a new path; the script rejects when output and input are identical. Each layer writes a JSON manifest recording input/output SHA-256, Gaussian counts, and removal reasons.
 
-本次保守参数移除 227,279 / 1,000,000 个点，其中 221,336 个是极低 alpha 点。清理后必须重新跑 1 条完整 episode，再用同帧三路视频做 A/B。SSIM 很高不等于更清晰，因此仍需人工看墙面连续性、边缘拉伸、曝光雾块和腕部低视角。
+The conservative run removed 227,279 of 1,000,000 points, with 221,336 points removed due to very low alpha. One full validation episode must be rerun on cleaned output, then A/B compared with matching-frame triple-camera videos. High SSIM is not equivalent to clearer images; manual review still requires wall continuity, edge stretching, exposure smearing, and low-angle wrist artifacts.

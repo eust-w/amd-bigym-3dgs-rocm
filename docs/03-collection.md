@@ -1,34 +1,34 @@
-# 32 条采集与失败回放治理
+# 32 collection runs and failed-replay governance
 
-## 大量回放失败的根因
+## Root causes of widespread replay failures
 
-BiGym 官方 demonstration 不是“取到就一定成功”。源轨迹同时存在 absolute/delta 动作语义，且本次源记录运行时为 BiGym 4.0.0 / MuJoCo 3.1.5，采集运行时为 4.1.0 / 3.10.0。版本、控制频率和动作表示任一漂移，都可能把可播放轨迹变成 `reward=0`。
+Official BiGym demonstration data is not guaranteed successful when replayed. Source trajectories may mix absolute and delta action semantics. In this run, source replay ran on BiGym 4.0.0 / MuJoCo 3.1.5, while collection runtime used 4.1.0 / 3.10.0. Any drift in version, control frequency, or action representation can turn a valid track into `reward=0`.
 
-正式采集采用两阶段 fail-closed 方案：
+Formal collection uses a two-phase fail-closed process:
 
-1. 无相机、无视频、无 3DGS 的物理预检，逐条运行当前 20 Hz runtime。
-2. 只把通过原始 task reward 的唯一 UUID 写入 replay plan；正式渲染不再随机选 demo。
+1. Physics-only precheck without cameras, without video, without 3DGS, running current runtime at 20 Hz.
+2. Only the unique UUIDs that pass raw task reward are written into the replay plan; no random demo is re-rendered.
 
-delta 源动作会在 `env.step()` 前转换为 absolute 标签，并在第二个 absolute 环境中检查 qpos 误差和最终 reward，从而保证训练集只有一种动作语义。
+Delta source actions are converted to absolute labels before `env.step()` and checked in a second absolute environment for final `qpos` error and final reward, so the training set only contains one action semantic.
 
-## 为什么每条 episode 独立落盘
+## Why each episode is written separately
 
-LeRobot v3 默认可能让 metadata 和 Parquet writer 缓存多条记录。容器重启后，视频已经存在，但 Parquet footer 还没有写完。采集补丁做了三件事：
+LeRobot v3 metadata and Parquet writer may cache multiple episodes together by default. If the container restarts, the videos may exist while Parquet footers are not yet complete. The collection patch applies three rules:
 
-- metadata buffer size 设为 1；
-- 每条成功 episode 后关闭 data/meta writer；
-- 只有重新加载后可读，才更新 `progress.json`。
+- Set metadata buffer size to 1.
+- Close data/meta writer after each successful episode.
+- Update `progress.json` only after reloaded records are readable.
 
-发现 0-episode 中断目录时先隔离；发现非空但损坏目录时停止，不回退到 Hub，也不继续拼接。
+When an empty zero-episode directory is found, it is quarantined. When a non-empty corrupted directory is found, stop immediately; do not fallback to Hub or concatenate incomplete outputs.
 
-## 正式门槛
+## Formal smoke threshold
 
-采集 32 条之前，1 条完整冒烟必须同时满足：
+Before official 32-run collection, at least one complete smoke run must satisfy all of the following:
 
-- replay 后 `reward=1.0`；
-- head、left wrist、right wrist 三路 H.264 可完整解码；
-- strict 3DGS 无 fallback、无 `last_error`；
-- 渲染次数等于 `(episode frames + reset) × 3`；
-- background physics 为 0/0/0。
+- Post-replay `reward=1.0`.
+- All three H.264 streams (head, left wrist, right wrist) decode fully.
+- Strict 3DGS mode with no fallback and no `last_error`.
+- Render count equals `(episode frames + reset) x 3`.
+- `background_physics` is `0/0/0`.
 
-本次冒烟为 683 帧、2,052 次 3DGS 渲染，全部通过后才启动正式 32 条。
+This smoke run uses 683 frames and 2,052 3DGS renders; only after passing does formal 32-run collection begin.

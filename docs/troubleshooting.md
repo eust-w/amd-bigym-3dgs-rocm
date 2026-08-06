@@ -1,33 +1,39 @@
-# 常见故障
+# Troubleshooting
 
 ## `torch.version.hip is None`
 
-安装的是 CUDA/CPU PyTorch，不是 ROCm build。回到 AMD 官方兼容矩阵安装，不要继续编 gsplat。
+You are using non-ROCm PyTorch (CPU or another backend), not an ROCm build. Reinstall according to AMD official compatibility matrix, then rebuild gsplat.
 
-## `hipcc` 存在但 JIT 仍寻找 `nvcc`
+## `hipcc` exists but JIT still looks for `nvcc`
 
-确认 `ROCM_HOME` 指向本仓库创建的 wrapper，`PATH` 中 wrapper/bin 位于前面，并重新设置一个空的 `TORCH_EXTENSIONS_DIR`。
+Confirm `ROCM_HOME` points to the repository-created wrapper, the wrapper `bin` is first in `PATH`, and reset `TORCH_EXTENSIONS_DIR` to an empty isolated path.
 
-## rocThrust / BF16 重复定义
+## Repeated rocThrust / BF16 definitions
 
-通常是 ROCm 系统头被 hipify 处理过，或 include 顺序混入了复制头。重新安装/校验官方 `hip-dev`、`rocthrust-dev`，只在独立 wrapper 和虚拟环境中重建。不要编辑 `/opt/rocm/include`。
+This is usually caused by ROCm system headers being hipified or mixed include order with duplicated headers. Reinstall/verify official `hip-dev` and `rocthrust-dev`; rebuild only in isolated wrapper and virtual environment. Do not edit `/opt/rocm/include`.
 
-## GLM 出现 HIP 化后的奇怪符号
+## Strange symbols after GLM HIP conversion
 
-不要把 GLM 作为 PyTorch JIT 的 `extra_include_paths`。本仓库补丁移除了该路径，并用 `CPLUS_INCLUDE_PATH` 指向 gsplat 原始 GLM tree。
+Do not pass GLM as `extra_include_paths` for PyTorch JIT. The project patch removes this path and uses `CPLUS_INCLUDE_PATH` to point directly to the original gsplat GLM tree.
 
-## 采集大量 `reward=0`
+## Many `reward=0`
 
-停止正式渲染，重新运行 20 Hz physics-only verifier。检查 demo 的 absolute/delta 表示、BiGym/MuJoCo 版本和 seed；失败轨迹不得写入成功训练集。
+Stop formal rendering and rerun 20 Hz physics-only verifier. Check demo absolute/delta representation, BiGym/MuJoCo versions, and seed; failed trajectories should not enter successful training set.
 
-## “只有一个 episode”
+## "Only one episode" appears in folder
 
-不要按目录里的 chunk 数判断。读取 `meta/episodes`、data Parquet 的 `episode_index`、行范围和 `meta/info.json`。本仓库验证器按这些字段给出结论。
+Do not judge by chunk count in directories. Read `meta/episodes`, data Parquet `episode_index`, row ranges, and `meta/info.json`. This repository's validator makes conclusions using these fields.
 
-## 能运行但看不到房间壳
+## Room shell is not visible despite running
 
-依次确认：profile 指向存在的 PLY；`T_gaussian_to_mujoco` 非单位占位矩阵；相机位于捕获路径附近；strict receipt 中 enabled=true、last_error=null、render count 大于 0。测试数量不能替代解码后的多相机画面。
+Check in order:
 
-## 壳能看到但低视角模糊/拉伸
+1. Confirm profile points to an existing PLY.
+2. `T_gaussian_to_mujoco` is not an identity placeholder.
+3. Camera is near captured path.
+4. strict receipt has `enabled=true`, `last_error=null`, and render count greater than 0.
+5. Frame counts are not sufficient; inspect decoded multi-camera visuals.
 
-这通常是源相机覆盖问题，不是继续删点可以解决。低 alpha/超大尺度/远处点可以保守清理；要达到照片级低视角，需要补拍覆盖 H1 头部与腕部姿态的源图并重新训练。
+## Shell is visible but low-angle blur/stretching remains
+
+This is usually missing source coverage, not solved by aggressive point removal. Conservative cleanup can remove very low alpha, oversized scale, and distant outliers; for near-photo photometric quality, recollect coverage around H1 head and wrist poses and retrain.

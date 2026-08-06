@@ -59,6 +59,10 @@ OpenSplat/HIP 训练 15,000 steps 的渲染结果。清晰预览门禁以 PSNR
 该联系表用于溯源。本 README 中的 PLY 下载和 BiGym shell 配置始终
 指向下方锁定的 AMD Hugging Face revision。
 
+32 条 LeRobot 重放数据来自 `data/manifests/cutlery32-dataset.public.json`，
+其 manifest 标注了 `status: "technical_pass_visual_approval_pending"`，且属于参考采集工单；
+该条目不应当作 AMD ROCm 主线训练完成证据。
+
 ## AMD 证据边界
 
 | 产物 | 当前结论 |

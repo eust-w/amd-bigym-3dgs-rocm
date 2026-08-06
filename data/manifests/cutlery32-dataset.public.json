@@ -4,7 +4,8 @@
   "dataset_path": "bigym-3dgs-light-floor-replay-plan-v2-20260802/dishwasher_unload_cutlery_long",
   "task": "DishwasherUnloadCutleryLong",
   "format": "LeRobot v3",
-  "runtime": "A800 CUDA",
+  "runtime": "reference-baseline",
+  "environment_note": "实验对比信息：该字段用于对照历史参考基线运行环境（非本仓库主线 AMD ROCm 支持声明）；主线训练/推理采用 AMD 平台。",
   "status": "technical_pass_visual_approval_pending",
   "canonical": true,
   "summary": {

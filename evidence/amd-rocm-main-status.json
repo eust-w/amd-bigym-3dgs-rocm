@@ -28,7 +28,7 @@
       1920,
       1080
     ],
-    "reference_branch": "a800"
+    "reference_branch": "reference"
   },
   "reconstruction": {
     "trainer": "OpenSplat",

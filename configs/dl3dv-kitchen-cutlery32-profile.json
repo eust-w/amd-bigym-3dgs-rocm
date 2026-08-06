@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "technical_candidate_pending_a800_visual_review",
+  "status": "technical_candidate_pending_reference_visual_review",
   "created_at": "2026-08-04T06:58:06.655540+00:00",
   "source": {
     "dataset": "DL3DV-10K / DL3DV-ALL-2K",
@@ -530,7 +530,7 @@
     }
   },
   "gaussian_refinement": {
-    "status": "technical_candidate_pending_a800_visual_review",
+    "status": "technical_candidate_pending_reference_visual_review",
     "method": "final-frame covariance-aware 3-sigma ellipsoid/AABB clipping plus low-alpha large-sigma reliability pruning",
     "evaluated_in": "final calibrated MuJoCo metric frame",
     "thresholds": {

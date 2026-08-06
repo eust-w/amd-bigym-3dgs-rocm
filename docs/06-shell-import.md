@@ -1,52 +1,53 @@
-# Gaussian 壳导入
+# Gaussian shell import
 
-壳导入的目标是把重建得到的 Gaussian 场景作为 BiGym/MuJoCo 的视觉背景，同时保持机器人、任务物体和碰撞系统仍由 MuJoCo 负责。
+Shell import aims to use the reconstructed Gaussian scene as BiGym/MuJoCo visual background while keeping robot, task objects, and collision system in MuJoCo.
 
-## 系统边界
+## System boundary
 
 ```mermaid
 flowchart TB
-    P["Gaussian PLY"] --> A["Sim(3) 坐标对齐"]
-    A --> R["3DGS 渲染器"]
-    M["MuJoCo 机器人/物体/碰撞"] --> C["相机参数与深度合成"]
+    P["Gaussian PLY"] --> A["Sim(3) alignment"]
+    A --> R["3DGS renderer"]
+    M["MuJoCo robot/objects/collision"] --> C["Camera params and depth synthesis"]
     R --> C
-    C --> O["BiGym 多相机观测"]
+    C --> O["BiGym multi-camera observation"]
 ```
 
-- Gaussian 壳负责视觉外观，不创建 MuJoCo body、geom 或 collision。
-- 机器人和可交互物体仍由 MuJoCo 渲染并计算动力学。
-- 对齐变换必须显式记录为 Sim(3)：尺度、旋转和平移。
-- 相机外参、坐标轴方向、近远裁剪面和 FOV 必须与 BiGym 观测配置一致。
+- Gaussian shell is visual appearance only and does not create MuJoCo body, geom, or collision objects.
+- Robot and interactive objects are still rendered and simulated by MuJoCo dynamics.
+- Alignment transform must be explicitly recorded as Sim(3): scale, rotation, and translation.
+- Camera extrinsics, axis orientation, near/far clipping planes, and FOV must match BiGym observation configuration.
 
-## 锁定依赖
+## Locked dependencies
 
-| 仓库/资源 | 源分支或 revision | 执行 commit/版本 | 作用 |
+| Repo/resource | Source branch or revision | Execution commit/version | Role |
 | --- | --- | --- | --- |
-| `eust-w/amd-bigym-3dgs-rocm` | `main` | `f66b9150ca7cfd48746147dfa8326a2657ab309e` | 壳资源、补丁和编排 |
-| `NeuracoreAI/bigym` | `master` | `14beb30318ad14c5d6723175c2ee2281129792af` | BiGym 基线，detached HEAD |
-| 本项目 BiGym overlay | `patches/bigym-3dgs-shell-and-collector.patch` | 随项目运行基线锁定 | 视觉壳、相机和采集接入 |
-| Gaussian 壳 | `amd-rocm-w7900d-20260804` | Hugging Face revision | 已发布的 AMD 重建资产 |
+| `eust-w/amd-bigym-3dgs-rocm` | `main` | `f66b9150ca7cfd48746147dfa8326a2657ab309e` | Shell assets, patches, and orchestration |
+| `NeuracoreAI/bigym` | `master` | `14beb30318ad14c5d6723175c2ee2281129792af` | BiGym baseline, detached HEAD |
+| Project BiGym overlay | `patches/bigym-3dgs-shell-and-collector.patch` | Locked with project baseline | Visual shell, camera, and collection integration |
+| Gaussian shell | `amd-rocm-w7900d-20260804` | Hugging Face revision | Released AMD reconstruction asset |
 
-## 导入流程
+## Import process
 
-1. 校验 PLY 文件、必要属性、哈希和资源 revision。
-2. 加载项目配置中的壳资产，并应用 Sim(3) 对齐参数。
-3. 从 BiGym/MuJoCo 获取每个相机的内外参、分辨率和裁剪范围。
-4. 分别渲染 Gaussian 背景与 MuJoCo 前景，再按项目实现合成观测。
-5. 在头部/双目或任务相机上执行静态帧、运动帧和遮挡检查。
-6. 确认壳没有进入物理碰撞树，也没有改变原任务动力学。
+1. Validate PLY files, required attributes, hashes, and resource revision.
+2. Load shell asset from project config and apply Sim(3) alignment parameters.
+3. Read each camera's pose, resolution, and clipping ranges from BiGym/MuJoCo.
+4. Render Gaussian background and MuJoCo foreground separately, then composite observations.
+5. Run static-frame, motion-frame, and occlusion checks on head/stereo/task cameras.
+6. Confirm shell never enters physical collision tree and does not change original task dynamics.
 
-## GPU 使用边界
+## GPU utilization boundary
 
-Gaussian 的投影、排序和光栅化使用 GPU；MuJoCo 物理步进主要使用 CPU。多相机、高分辨率和每步都渲染会提高 GPU busy 和显存占用，但实际数值取决于可见 Gaussian 数量、分辨率、相机数量和渲染后端。当前证据没有提供可复用的连续显存/GPU 利用率统计，因此不在文档中给出未经测量的百分比。
+Gaussian projection, sorting, and rasterization use GPU; MuJoCo physics stepping is primarily CPU. Multi-camera pipelines, high resolution, and per-step rendering increase GPU busy and VRAM, while absolute values depend on visible Gaussians, resolution, camera count, and render backend.
 
-## 验收门槛
+For this section, reuse the corresponding historical ranges in [`docs/05-3d-reconstruction.md`](05-3d-reconstruction.md) under GPU + VRAM observations: `BiGym triple-camera gsplat + EGL`, `External 7B BF16 VLA reference`, and `One W7900D shared by simulator + 7B inference`.
 
-- 相机画面能看到完整外壳，而不是仅有前视图或局部贴片。
-- 运动时没有明显坐标漂移、尺度错误、左右目交换或前后景穿插错误。
-- MuJoCo 物体和机器人保持可见、可交互，碰撞行为与无壳基线一致。
-- 静态截图、短视频、配置快照和资产 revision 一并留存。
-- 壳导入通过不代表采集成功，也不代表策略闭环成功。
+## Acceptance gates
 
-更详细的坐标与物理边界见 [端到端说明](01-end-to-end.md)。
+- Camera views should show a complete shell, not only front-view or local patches.
+- No obvious drift, scale error, eye swap, or foreground/background ordering errors while moving.
+- MuJoCo objects and robot remain visible and interactive; collision behavior matches no-shell baseline.
+- Keep static screenshots, short videos, config snapshots, and shell revision together.
+- Shell import passing does not imply collection success and does not imply closed-loop policy success.
 
+See [end-to-end notes](01-end-to-end.md) for detailed coordinate and physical boundaries.

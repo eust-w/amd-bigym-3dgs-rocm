@@ -5,7 +5,7 @@ DL3DV commercial-kitchen scene:
 
 - `reconstruct_rocm.sh`: the AMD Radeon `gfx1100` main path, using OpenSplat's
   native HIP backend;
-- `reconstruct.sh`: the locked A800/gsplat reference implementation retained
+- `reconstruct.sh`: the locked cross-platform/legacy gsplat reference implementation retained
   for provenance and cross-platform comparison.
 
 The source object is
@@ -60,21 +60,21 @@ collision-free room-shell layers. A run is accepted only when its
 machine-readable receipt is
 `amd_rocm_reproduction_passed`.
 
-## A800 reference path
+## Cross-platform reference path
 
-The A800 reference remains:
+The legacy reference path remains:
 
 ```bash
 export SOURCE_ARCHIVE="$PWD/data/private/dl3dv-kitchen/90e70328f9196bc78c7e6c695c1e8cbb55a3c961cccf34c566966a5e2d8d8947.zip"
 export SOURCE_REPORT="$PWD/data/private/dl3dv-kitchen/source.json"
 export GSPLAT_DIR=/workspace/gsplat
 export BIGYM_DIR=/workspace/amd-bigym-3dgs/src/bigym
-export WORK_ROOT=/workspace/runs/dl3dv-commercial-kitchen-a800
+export WORK_ROOT=/workspace/runs/dl3dv-commercial-kitchen-reference
 reconstruction/bin/reconstruct.sh
 ```
 
 Its exact published hashes are locked in
-`data/manifests/a800-reconstruction.public.json`.
+`data/manifests/reference-reconstruction.public.json`.
 
 ## CPU contract test
 
