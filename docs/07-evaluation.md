@@ -67,4 +67,4 @@ sequenceDiagram
 
 `evaluation/bigym-3dgs/src/run_model_matrix.py` 提供严格的双模型评测入口。示例清单固定两个外部 provider：`openpi-jax` 与 `opendm-dm05`。编排器先校验并冻结两个 `/health` 身份，再顺序调用同一套 BiGym+3DGS 评测，最终生成 `model-matrix-summary.json`。
 
-该代码只包含 HTTP、模拟器执行、轨迹记录、校验和结果比较，不加载模型、不下载 checkpoint，也不包含 OpenPI/OpenDM 推理实现。OpenDM 的协议 v2 推理 adapter 已通过 [`Kyrie-w8/amd-bigym-3dgs-opendm#1`](https://github.com/Kyrie-w8/amd-bigym-3dgs-opendm/pull/1) 提交上游；当前贡献 commit 为 `394f77f6c321c61e6c3a857728abd651ac09fd13`。
+该代码只包含 HTTP、模拟器执行、轨迹记录、校验和结果比较，不加载模型、不下载 checkpoint，也不包含 OpenPI/OpenDM 推理实现。OpenDM 的协议 v2 推理 adapter 已通过 [`Kyrie-w8/amd-bigym-3dgs-opendm#1`](https://github.com/Kyrie-w8/amd-bigym-3dgs-opendm/pull/1) 合并上游；贡献 commit 为 `394f77f6c321c61e6c3a857728abd651ac09fd13`，上游 `main` 合并 commit 为 `8f018b253d0fd2b41a4fa4a87610829eaca74c44`。
