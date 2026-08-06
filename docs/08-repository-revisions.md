@@ -20,6 +20,7 @@
 | 壳导入/采集 | `NeuracoreAI/bigym` | `master` | `14beb30318ad14c5d6723175c2ee2281129792af` | BiGym 基线 |
 | 壳导入/采集 | 本项目 BiGym overlay | 随 `main` 基线 | `patches/bigym-3dgs-shell-and-collector.patch` | 3DGS、相机与采集接入 |
 | 闭环评测 | `WuChao-2024/bigym_plus` | `master` | `d12937686833467b5013ac47a834cf4b6f5a9d53` | 评测客户端基线 |
+| OpenDM 推理贡献 | `eust-w/amd-bigym-3dgs-opendm` | `upstream/external-inference-v2` | `394f77f6c321c61e6c3a857728abd651ac09fd13` | HTTP v2 provider；上游 PR `Kyrie-w8#1`，未合并前不作为正式执行锁 |
 | 历史推理实现 | `eust-w/amd-bigym-3dgs-rocm` | `interence` | `eb1bdf844a20f02b2fcb419fa1d33ed4db06484f` | 仅追溯，不是当前主线依赖 |
 
 ## 上游贡献分支
@@ -35,6 +36,7 @@
 | `eust-w/bigym_plus` | `upstream/configurable-camera-rendering` | `d665b9536e3155e753d277276c57da51cb2b5086` | `NeuracoreAI/bigym#65` |
 | `eust-w/gsplat` | `upstream/rocm-toolkit-probe` | `2e20e3566dd286f59d6df21b0b9364e48e862bc3` | `nerfstudio-project/gsplat#1045` |
 | `eust-w/gsplat` | `upstream/rocm-jit-build-flags` | `337427aeccf0e15c5c798cafd0bc2fd84ccd3bb3` | `nerfstudio-project/gsplat#1046` |
+| `eust-w/amd-bigym-3dgs-opendm` | `upstream/external-inference-v2` | `394f77f6c321c61e6c3a857728abd651ac09fd13` | `Kyrie-w8/amd-bigym-3dgs-opendm#1` |
 
 ## 工作分支
 
@@ -69,4 +71,3 @@ GitHub 不会在跨仓库 PR 中自动迁移已改名的 head ref。为保持 co
 2. 在证据收据中记录执行时的 `git remote get-url origin`、`git branch --show-current` 和 `git rev-parse HEAD`。
 3. 上游分支 HEAD 变化时不得静默移动执行锁；必须重新运行对应阶段验收。
 4. 评测 provider 不进入固定矩阵时，必须在单次评测收据中补齐相同字段。
-
